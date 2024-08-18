@@ -1,0 +1,27 @@
+name: "update-git-submodules"
+description: "Update git submodules to the latest tag or commit."
+author: "sgoudham"
+
+inputs:
+  gitmodulesPath:
+    description: "The path to the '.gitmodules' file. Defaults to '.gitmodules' in the root of the repository."
+    required: false
+    default: ".gitmodules"
+  submodules:
+    description: "The submodules to update. Defaults to all submodules in the '.gitmodules' file."
+    required: false
+    default: ""
+
+outputs:
+  updatedJson:
+    description: "A JSON array containing all the submodules that were updated."
+  updatedMatrix:
+    description: "A JSON array containing all the submodules that were updated for use in a matrix strategy."
+
+runs:
+  using: node20
+  main: dist/index.js
+
+branding:
+  icon: "git-branch"
+  color: "red"
