@@ -1,0 +1,48 @@
+{
+  "name": "update-git-submodules",
+  "description": "Update git submodules to the latest tag or commit.",
+  "version": "0.0.0",
+  "author": "Goudham <sgoudham@gmail.com>",
+  "private": true,
+  "homepage": "https://github.com/sgoudham/update-git-submodules",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sgoudham/update-git-submodules.git"
+  },
+  "bugs": {
+    "url": "https://github.com/sgoudham/update-git-submodules/issues"
+  },
+  "keywords": [
+    "actions",
+    "node",
+    "setup"
+  ],
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "packageManager": "pnpm@9.8.0",
+  "scripts": {
+    "build": "pnpm exec ncc build src/index.ts -o dist --source-map --license licenses.txt",
+    "build:watch": "pnpm build -- --watch",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "test:cov": "vitest run --coverage",
+    "build:test": "pnpm build && pnpm test:run"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "@actions/core": "^1.10.1",
+    "@actions/exec": "^1.1.1"
+  },
+  "devDependencies": {
+    "@tsconfig/recommended": "^1.0.7",
+    "@types/node": "^22.2.0",
+    "@vercel/ncc": "^0.38.1",
+    "@vitest/coverage-v8": "^2.0.5",
+    "typescript": "^5.5.4",
+    "vitest": "^2.0.5"
+  }
+}
