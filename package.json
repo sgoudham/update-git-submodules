@@ -4,13 +4,13 @@
   "version": "0.0.0",
   "author": "Goudham <sgoudham@gmail.com>",
   "private": true,
-  "homepage": "https://github.com/sgoudham/update-submodule",
+  "homepage": "https://github.com/sgoudham/update-git-submodules",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/sgoudham/update-submodule.git"
+    "url": "git+https://github.com/sgoudham/update-git-submodules.git"
   },
   "bugs": {
-    "url": "https://github.com/sgoudham/update-submodule/issues"
+    "url": "https://github.com/sgoudham/update-git-submodules/issues"
   },
   "keywords": [
     "actions",
