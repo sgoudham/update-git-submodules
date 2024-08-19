@@ -1,5 +1,5 @@
 import * as core from "@actions/core";
-import { exec, ExecOptions, ExecOutput, getExecOutput } from "@actions/exec";
+import { exec, ExecOutput, getExecOutput } from "@actions/exec";
 import * as fs from "node:fs/promises";
 
 type GAMatrix = {
@@ -7,7 +7,7 @@ type GAMatrix = {
   include: Submodule[];
 };
 
-type Submodule = {
+export type Submodule = {
   name: string;
   path: string;
   url: string;
@@ -17,27 +17,36 @@ type SubmoduleWithTag = Submodule & {
   latestTag: string;
 };
 
+type ReadFileOutput = {
+  exitCode: number;
+  err: string;
+  contents: string;
+};
+
 const toJson = (value: any, padding: number = 2): string =>
   JSON.stringify(value, null, padding);
 
-const readFile = async (path: string): Promise<string | null> => {
+const readFile = async (path: string): Promise<ReadFileOutput> => {
+  let err = "";
+
   try {
-    return await fs.readFile(path, "utf8");
+    const contents = await fs.readFile(path, "utf8");
+    return { exitCode: 0, err: "", contents };
   } catch (error) {
     if (error instanceof Error) {
       if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-        core.warning(`File not found: ${path}`);
-        return null;
+        err = `File not found: ${path}`;
+        return { exitCode: 1, err, contents: "" };
       }
-      core.setFailed(`Error reading file: ${error.message}`);
+      err = `Error reading file: ${error.message}`;
     } else {
-      core.setFailed("An unknown error occurred while reading the file");
+      err = "An unknown error occurred while reading the file";
     }
-    return null;
+    return { exitCode: 1, err, contents: "" };
   }
 };
 
-const parseGitModules = (content: string): Submodule[] => {
+export const parseGitModules = (content: string): Submodule[] => {
   const gitmodulesRegex =
     /^\[submodule\s+"([^"]+)"\]\s*\n\s*path\s*=\s*(.+)\s*\n\s*url\s*=\s*(.+)\s*$/gm;
   return Array.from(content.matchAll(gitmodulesRegex)).map(
@@ -51,21 +60,19 @@ const parseGitModules = (content: string): Submodule[] => {
   );
 };
 
-const updateSubmoduleRemotes = async (
+const updateAllSubmodules = async (): Promise<ExecOutput> => {
+  // Allow git to update the submodules with its internal logic
+  return await getExecOutput("git submodule update --remote");
+};
+
+export const filterSubmodules = async (
+  rawUpdatedSubmodules: string,
   detectedSubmodules: Submodule[],
   userSubmodules: string
 ): Promise<Submodule[]> => {
-  // Allow git to update the submodules
-  const { stdout } = await getExecOutput("git submodule update --remote");
-
-  // All submodules have no new remote commits, the action doesn't need to do anything after this
-  if (stdout.trim() === "") {
-    return [];
-  }
-
   // Parse the updated submodules from the git output
   // ASSUMPTION: The first set of single quotes is the submodule path
-  const updatedSubmodules = stdout
+  const updatedSubmodules = rawUpdatedSubmodules
     .trim()
     .split("\n")
     .map((line) => line.split("'")[1]);
@@ -93,10 +100,10 @@ const updateSubmoduleRemotes = async (
   );
 };
 
-const updateToLatestTag = async (updatedSubmodules: Submodule[]) => {
-  const submodulesWithTag: SubmoduleWithTag[] = [];
-
-  for (const submodule of updatedSubmodules) {
+const updateToLatestTag = async (
+  updatedSubmodules: Submodule[]
+): Promise<SubmoduleWithTag[]> => {
+  const submodulesWithTag = updatedSubmodules.map(async (submodule) => {
     core.info(`Fetching latest tag: ${submodule.path}`);
 
     const latestTag = (
@@ -107,10 +114,10 @@ const updateToLatestTag = async (updatedSubmodules: Submodule[]) => {
 
     await exec(`git reset --hard ${latestTag}`, [], { cwd: submodule.path });
 
-    submodulesWithTag.push({ ...submodule, latestTag });
-  }
+    return { ...submodule, latestTag } as SubmoduleWithTag;
+  });
 
-  return submodulesWithTag;
+  return await Promise.all(submodulesWithTag);
 };
 
 /**
@@ -122,28 +129,37 @@ export async function run(): Promise<void> {
     const gitModulesPath = core.getInput("gitmodulesPath");
     const inputSubmodules = core.getInput("submodules");
 
-    const gitModulesContent = await readFile(gitModulesPath);
-    if (gitModulesContent === null) {
+    const gitModulesOutput = await readFile(gitModulesPath);
+    if (gitModulesOutput.exitCode !== 0) {
+      core.setFailed(gitModulesOutput.err);
+      return;
+    }
+    if (gitModulesOutput.contents === "") {
+      core.info("No submodules detected.");
+      core.info("Nothing to do. Exiting...");
       return;
     }
 
-    const detectedSubmodules = await parseGitModules(gitModulesContent);
+    const detectedSubmodules = await parseGitModules(gitModulesOutput.contents);
     core.info(`Detected submodules: ${toJson(detectedSubmodules)}`);
 
-    const updatedSubmodules = await updateSubmoduleRemotes(
+    const { stdout: rawUpdatedSubmodules } = await updateAllSubmodules();
+    if (rawUpdatedSubmodules.trim() === "") {
+      core.info("All submodules have no new remote commits.");
+      core.info("Nothing to do. Exiting...");
+      return;
+    }
+
+    const filteredSubmodules = await filterSubmodules(
+      rawUpdatedSubmodules,
       detectedSubmodules,
       inputSubmodules
     );
-    if (updatedSubmodules.length === 0) {
-      core.info("Nothing to do.");
-      core.info("Exiting...");
-      return;
-    }
     core.info(
-      `Submodules with new remote commits: ${toJson(updatedSubmodules)}`
+      `Submodules with new remote commits: ${toJson(filteredSubmodules)}`
     );
 
-    const submodulesWithTag = await updateToLatestTag(updatedSubmodules);
+    const submodulesWithTag = await updateToLatestTag(filteredSubmodules);
 
     for (const { name, path, url, latestTag } of submodulesWithTag) {
       core.setOutput(`${name}--path`, path);

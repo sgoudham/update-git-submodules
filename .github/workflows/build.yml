@@ -22,3 +22,5 @@ jobs:
         run: pnpm i --frozen-lockfile
       - name: Build
         run: pnpm build
+      - name: Test
+        run: pnpm test

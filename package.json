@@ -26,7 +26,9 @@
   "packageManager": "pnpm@9.7.1",
   "scripts": {
     "build": "pnpm exec ncc build src/index.ts -o dist --source-map --license licenses.txt",
-    "build:watch": "pnpm build -- --watch"
+    "build:watch": "pnpm build -- --watch",
+    "test": "tsx --test src/*.test.ts",
+    "build:test": "pnpm build && pnpm test"
   },
   "license": "MIT",
   "dependencies": {
@@ -37,6 +39,7 @@
     "@tsconfig/recommended": "^1.0.7",
     "@types/node": "^22.2.0",
     "@vercel/ncc": "^0.38.1",
+    "tsx": "^4.17.0",
     "typescript": "^5.5.4"
   }
 }

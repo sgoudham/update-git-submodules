@@ -26198,27 +26198,30 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.filterSubmodules = exports.parseGitModules = void 0;
 exports.run = run;
 const core = __importStar(__nccwpck_require__(9093));
 const exec_1 = __nccwpck_require__(7775);
 const fs = __importStar(__nccwpck_require__(3977));
 const toJson = (value, padding = 2) => JSON.stringify(value, null, padding);
 const readFile = (path) => __awaiter(void 0, void 0, void 0, function* () {
+    let err = "";
     try {
-        return yield fs.readFile(path, "utf8");
+        const contents = yield fs.readFile(path, "utf8");
+        return { exitCode: 0, err: "", contents };
     }
     catch (error) {
         if (error instanceof Error) {
             if (error.code === "ENOENT") {
-                core.warning(`File not found: ${path}`);
-                return null;
+                err = `File not found: ${path}`;
+                return { exitCode: 1, err, contents: "" };
             }
-            core.setFailed(`Error reading file: ${error.message}`);
+            err = `Error reading file: ${error.message}`;
         }
         else {
-            core.setFailed("An unknown error occurred while reading the file");
+            err = "An unknown error occurred while reading the file";
         }
-        return null;
+        return { exitCode: 1, err, contents: "" };
     }
 });
 const parseGitModules = (content) => {
@@ -26231,16 +26234,15 @@ const parseGitModules = (content) => {
         };
     });
 };
-const updateSubmoduleRemotes = (detectedSubmodules, userSubmodules) => __awaiter(void 0, void 0, void 0, function* () {
-    // Allow git to update the submodules
-    const { stdout } = yield (0, exec_1.getExecOutput)("git submodule update --remote");
-    // All submodules have no new remote commits, the action doesn't need to do anything after this
-    if (stdout.trim() === "") {
-        return [];
-    }
+exports.parseGitModules = parseGitModules;
+const updateAllSubmodules = () => __awaiter(void 0, void 0, void 0, function* () {
+    // Allow git to update the submodules with its internal logic
+    return yield (0, exec_1.getExecOutput)("git submodule update --remote");
+});
+const filterSubmodules = (rawUpdatedSubmodules, detectedSubmodules, userSubmodules) => __awaiter(void 0, void 0, void 0, function* () {
     // Parse the updated submodules from the git output
     // ASSUMPTION: The first set of single quotes is the submodule path
-    const updatedSubmodules = stdout
+    const updatedSubmodules = rawUpdatedSubmodules
         .trim()
         .split("\n")
         .map((line) => line.split("'")[1]);
@@ -26259,17 +26261,17 @@ const updateSubmoduleRemotes = (detectedSubmodules, userSubmodules) => __awaiter
     return detectedSubmodules.filter((submodule) => parsedUserSubmodules.some((parsed) => parsed === submodule.path) &&
         updatedSubmodules.some((updated) => updated === submodule.path));
 });
+exports.filterSubmodules = filterSubmodules;
 const updateToLatestTag = (updatedSubmodules) => __awaiter(void 0, void 0, void 0, function* () {
-    const submodulesWithTag = [];
-    for (const submodule of updatedSubmodules) {
+    const submodulesWithTag = updatedSubmodules.map((submodule) => __awaiter(void 0, void 0, void 0, function* () {
         core.info(`Fetching latest tag: ${submodule.path}`);
         const latestTag = (yield (0, exec_1.getExecOutput)("git describe --abbrev=0 --tags", [], {
             cwd: submodule.path,
         })).stdout.trim();
         yield (0, exec_1.exec)(`git reset --hard ${latestTag}`, [], { cwd: submodule.path });
-        submodulesWithTag.push(Object.assign(Object.assign({}, submodule), { latestTag }));
-    }
-    return submodulesWithTag;
+        return Object.assign(Object.assign({}, submodule), { latestTag });
+    }));
+    return yield Promise.all(submodulesWithTag);
 });
 /**
  * The main function for the action.
@@ -26280,20 +26282,27 @@ function run() {
         try {
             const gitModulesPath = core.getInput("gitmodulesPath");
             const inputSubmodules = core.getInput("submodules");
-            const gitModulesContent = yield readFile(gitModulesPath);
-            if (gitModulesContent === null) {
+            const gitModulesOutput = yield readFile(gitModulesPath);
+            if (gitModulesOutput.exitCode !== 0) {
+                core.setFailed(gitModulesOutput.err);
                 return;
             }
-            const detectedSubmodules = yield parseGitModules(gitModulesContent);
+            if (gitModulesOutput.contents === "") {
+                core.info("No submodules detected.");
+                core.info("Nothing to do. Exiting...");
+                return;
+            }
+            const detectedSubmodules = yield (0, exports.parseGitModules)(gitModulesOutput.contents);
             core.info(`Detected submodules: ${toJson(detectedSubmodules)}`);
-            const updatedSubmodules = yield updateSubmoduleRemotes(detectedSubmodules, inputSubmodules);
-            if (updatedSubmodules.length === 0) {
-                core.info("Nothing to do.");
-                core.info("Exiting...");
+            const { stdout: rawUpdatedSubmodules } = yield updateAllSubmodules();
+            if (rawUpdatedSubmodules.trim() === "") {
+                core.info("All submodules have no new remote commits.");
+                core.info("Nothing to do. Exiting...");
                 return;
             }
-            core.info(`Submodules with new remote commits: ${toJson(updatedSubmodules)}`);
-            const submodulesWithTag = yield updateToLatestTag(updatedSubmodules);
+            const filteredSubmodules = yield (0, exports.filterSubmodules)(rawUpdatedSubmodules, detectedSubmodules, inputSubmodules);
+            core.info(`Submodules with new remote commits: ${toJson(filteredSubmodules)}`);
+            const submodulesWithTag = yield updateToLatestTag(filteredSubmodules);
             for (const { name, path, url, latestTag } of submodulesWithTag) {
                 core.setOutput(`${name}--path`, path);
                 core.setOutput(`${name}--url`, url);
