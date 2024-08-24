@@ -3,7 +3,7 @@ import {
   filterSubmodules,
   parseGitModules,
   Submodule,
-  SubmoduleWithTag,
+  SubmoduleWithLatestTag,
   updateSubmodules,
   updateToLatestTag,
 } from "./main";
@@ -223,5 +223,5 @@ test("update to latest tag", async () => {
       path: "ports/mdBook",
       url: "https://github.com/catppuccin/mdBook.git",
     },
-  ] as SubmoduleWithTag[]);
+  ] as SubmoduleWithLatestTag[]);
 });

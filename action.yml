@@ -17,6 +17,8 @@ outputs:
     description: "A JSON array containing all the submodules that were updated."
   updatedMatrix:
     description: "A JSON array containing all the submodules that were updated for use in a matrix strategy."
+  updatedMarkdownTable:
+    description: "A markdown table containing all the submodules that were updated."
 
 runs:
   using: node20

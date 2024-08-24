@@ -1,6 +1,7 @@
 import { exec, getExecOutput } from "@actions/exec";
 import * as core from "@actions/core";
 import * as fs from "node:fs/promises";
+import { g } from "vitest/dist/chunks/suite.CcK46U-P";
 
 type GAMatrix = {
   name: string[];
@@ -13,7 +14,7 @@ export type Submodule = {
   url: string;
 };
 
-export type SubmoduleWithTag = Submodule & {
+export type SubmoduleWithLatestTag = Submodule & {
   latestTag: string;
 };
 
@@ -110,7 +111,7 @@ export const updateSubmodules = async (
 
 export const updateToLatestTag = async (
   updatedSubmodules: Submodule[]
-): Promise<SubmoduleWithTag[]> => {
+): Promise<SubmoduleWithLatestTag[]> => {
   const submodulesWithTag = updatedSubmodules.map(async (submodule) => {
     core.info(`Fetching latest tag: ${submodule.path}`);
     const options = { cwd: submodule.path };
@@ -121,10 +122,22 @@ export const updateToLatestTag = async (
 
     await exec(`git reset --hard`, [latestTag], options);
 
-    return { ...submodule, latestTag } as SubmoduleWithTag;
+    return { ...submodule, latestTag } as SubmoduleWithLatestTag;
   });
 
   return await Promise.all(submodulesWithTag);
+};
+
+export const generateMarkdownTable = (submodules: SubmoduleWithLatestTag[]) => {
+  const header =
+    "| **Name** | **Path** | **Latest Tag** |\n| --- | --- | --- |";
+  const body = submodules
+    .map(
+      (submodule) =>
+        `| ${submodule.name} | ${submodule.path} | ${submodule.latestTag} |`
+    )
+    .join("\n");
+  return `${header}\n${body}`;
 };
 
 /**
@@ -196,6 +209,10 @@ export async function run(): Promise<void> {
         } as GAMatrix,
         0
       )
+    );
+    core.setOutput(
+      "updatedMarkdownTable",
+      generateMarkdownTable(submodulesWithTag)
     );
   } catch (error) {
     if (error instanceof Error) core.setFailed(error.message);

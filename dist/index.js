@@ -26198,7 +26198,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.updateToLatestTag = exports.updateSubmodules = exports.filterSubmodules = exports.parseGitModules = void 0;
+exports.generateMarkdownTable = exports.updateToLatestTag = exports.updateSubmodules = exports.filterSubmodules = exports.parseGitModules = void 0;
 exports.run = run;
 const exec_1 = __nccwpck_require__(7775);
 const core = __importStar(__nccwpck_require__(9093));
@@ -26279,6 +26279,14 @@ const updateToLatestTag = (updatedSubmodules) => __awaiter(void 0, void 0, void 
     return yield Promise.all(submodulesWithTag);
 });
 exports.updateToLatestTag = updateToLatestTag;
+const generateMarkdownTable = (submodules) => {
+    const header = "| **Name** | **Path** | **Latest Tag** |\n| --- | --- | --- |";
+    const body = submodules
+        .map((submodule) => `| ${submodule.name} | ${submodule.path} | ${submodule.latestTag} |`)
+        .join("\n");
+    return `${header}\n${body}`;
+};
+exports.generateMarkdownTable = generateMarkdownTable;
 /**
  * The main function for the action.
  * @returns {Promise<void>} Resolves when the action is complete.
@@ -26329,6 +26337,7 @@ function run() {
                 name: submodulesWithTag.map((submodule) => submodule.name),
                 include: submodulesWithTag,
             }, 0));
+            core.setOutput("updatedMarkdownTable", (0, exports.generateMarkdownTable)(submodulesWithTag));
         }
         catch (error) {
             if (error instanceof Error)
