@@ -26198,10 +26198,10 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.filterSubmodules = exports.parseGitModules = void 0;
+exports.updateToLatestTag = exports.updateSubmodules = exports.filterSubmodules = exports.parseGitModules = void 0;
 exports.run = run;
-const core = __importStar(__nccwpck_require__(9093));
 const exec_1 = __nccwpck_require__(7775);
+const core = __importStar(__nccwpck_require__(9093));
 const fs = __importStar(__nccwpck_require__(3977));
 const toJson = (value, padding = 2) => JSON.stringify(value, null, padding);
 const readFile = (path) => __awaiter(void 0, void 0, void 0, function* () {
@@ -26225,7 +26225,7 @@ const readFile = (path) => __awaiter(void 0, void 0, void 0, function* () {
     }
 });
 const parseGitModules = (content) => {
-    const gitmodulesRegex = /^\[submodule\s+"([^"]+)"\]\s*\n\s*path\s*=\s*(.+)\s*\n\s*url\s*=\s*(.+)\s*$/gm;
+    const gitmodulesRegex = /^\s*\[submodule\s+"([^"]+)"\]\s*\n\s*path\s*=\s*(.+)\s*\n\s*url\s*=\s*(.+)\s*$/gm;
     return Array.from(content.matchAll(gitmodulesRegex)).map(([_, name, path, url]) => {
         return {
             name: name,
@@ -26235,44 +26235,50 @@ const parseGitModules = (content) => {
     });
 };
 exports.parseGitModules = parseGitModules;
-const updateAllSubmodules = () => __awaiter(void 0, void 0, void 0, function* () {
-    // Allow git to update the submodules with its internal logic
-    return yield (0, exec_1.getExecOutput)("git submodule update --remote");
-});
-const filterSubmodules = (rawUpdatedSubmodules, detectedSubmodules, userSubmodules) => __awaiter(void 0, void 0, void 0, function* () {
-    // Parse the updated submodules from the git output
-    // ASSUMPTION: The first set of single quotes is the submodule path
-    const updatedSubmodules = rawUpdatedSubmodules
-        .trim()
-        .split("\n")
-        .map((line) => line.split("'")[1]);
-    core.debug(`Updated submodules: ${toJson(updatedSubmodules)}`);
-    // If the user hasn't specified the submodules to update, return the intersection of the detected and updated submodules
-    if (!userSubmodules) {
-        return detectedSubmodules.filter((submodule) => updatedSubmodules.some((updated) => updated === submodule.path));
+const filterSubmodules = (inputSubmodules, detectedSubmodules) => __awaiter(void 0, void 0, void 0, function* () {
+    if (!inputSubmodules) {
+        return detectedSubmodules;
     }
     // Github Actions doesn't support array inputs, so the submodules are passed as a string with each submodule in a new line
-    const parsedUserSubmodules = userSubmodules
+    const parsedInputSubmodules = inputSubmodules
         .trim()
         .split("\n")
         .map((submodule) => submodule.trim().replace(/"/g, ""));
-    core.debug(`User submodules: ${toJson(parsedUserSubmodules)}`);
-    // We only want to update user's submodule(s) if git has updated it
-    return detectedSubmodules.filter((submodule) => parsedUserSubmodules.some((parsed) => parsed === submodule.path) &&
-        updatedSubmodules.some((updated) => updated === submodule.path));
+    core.debug(`Input submodules: ${toJson(parsedInputSubmodules)}`);
+    // We only want to update the submodules that the user has specified from the detected submodules
+    return detectedSubmodules.filter((submodule) => parsedInputSubmodules.some((parsed) => parsed === submodule.path));
 });
 exports.filterSubmodules = filterSubmodules;
+const updateSubmodules = (filteredSubmodules) => __awaiter(void 0, void 0, void 0, function* () {
+    const paths = filteredSubmodules.map((submodule) => submodule.path);
+    const { stdout } = yield (0, exec_1.getExecOutput)("git submodule update --remote", paths);
+    if (stdout.trim() === "") {
+        return [];
+    }
+    // Parse the updated submodules from the git output
+    // ASSUMPTION: The first set of single quotes is the submodule path
+    const updatedSubmodules = stdout
+        .trim()
+        .split("\n")
+        .map((line) => line.split("'")[1]);
+    core.debug(`Submodules parsed from git output: ${toJson(updatedSubmodules)}`);
+    // We only want to update the submodules that actually have new commits
+    return filteredSubmodules.filter((submodule) => {
+        return updatedSubmodules.some((updated) => updated === submodule.path);
+    });
+});
+exports.updateSubmodules = updateSubmodules;
 const updateToLatestTag = (updatedSubmodules) => __awaiter(void 0, void 0, void 0, function* () {
     const submodulesWithTag = updatedSubmodules.map((submodule) => __awaiter(void 0, void 0, void 0, function* () {
         core.info(`Fetching latest tag: ${submodule.path}`);
-        const latestTag = (yield (0, exec_1.getExecOutput)("git describe --abbrev=0 --tags", [], {
-            cwd: submodule.path,
-        })).stdout.trim();
-        yield (0, exec_1.exec)(`git reset --hard ${latestTag}`, [], { cwd: submodule.path });
+        const options = { cwd: submodule.path };
+        const latestTag = (yield (0, exec_1.getExecOutput)("git describe --abbrev=0 --tags", [], options)).stdout.trim();
+        yield (0, exec_1.exec)(`git reset --hard`, [latestTag], options);
         return Object.assign(Object.assign({}, submodule), { latestTag });
     }));
     return yield Promise.all(submodulesWithTag);
 });
+exports.updateToLatestTag = updateToLatestTag;
 /**
  * The main function for the action.
  * @returns {Promise<void>} Resolves when the action is complete.
@@ -26294,15 +26300,16 @@ function run() {
             }
             const detectedSubmodules = yield (0, exports.parseGitModules)(gitModulesOutput.contents);
             core.info(`Detected submodules: ${toJson(detectedSubmodules)}`);
-            const { stdout: rawUpdatedSubmodules } = yield updateAllSubmodules();
-            if (rawUpdatedSubmodules.trim() === "") {
+            const filteredSubmodules = yield (0, exports.filterSubmodules)(inputSubmodules, detectedSubmodules);
+            core.info(`Submodules to update: ${toJson(filteredSubmodules)}`);
+            const updatedSubmodules = yield (0, exports.updateSubmodules)(filteredSubmodules);
+            if (updatedSubmodules.length === 0) {
                 core.info("All submodules have no new remote commits.");
                 core.info("Nothing to do. Exiting...");
                 return;
             }
-            const filteredSubmodules = yield (0, exports.filterSubmodules)(rawUpdatedSubmodules, detectedSubmodules, inputSubmodules);
-            core.info(`Submodules with new remote commits: ${toJson(filteredSubmodules)}`);
-            const submodulesWithTag = yield updateToLatestTag(filteredSubmodules);
+            core.info(`Updated submodules: ${toJson(updatedSubmodules)}`);
+            const submodulesWithTag = yield (0, exports.updateToLatestTag)(updatedSubmodules);
             for (const { name, path, url, latestTag } of submodulesWithTag) {
                 core.setOutput(`${name}--path`, path);
                 core.setOutput(`${name}--url`, url);

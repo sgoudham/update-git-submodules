@@ -27,8 +27,10 @@
   "scripts": {
     "build": "pnpm exec ncc build src/index.ts -o dist --source-map --license licenses.txt",
     "build:watch": "pnpm build -- --watch",
-    "test": "tsx --test src/*.test.ts",
-    "build:test": "pnpm build && pnpm test"
+    "test": "vitest",
+    "test:run": "vitest run",
+    "test:cov": "vitest run --coverage",
+    "build:test": "pnpm build && pnpm test:run"
   },
   "license": "MIT",
   "dependencies": {
@@ -39,7 +41,9 @@
     "@tsconfig/recommended": "^1.0.7",
     "@types/node": "^22.2.0",
     "@vercel/ncc": "^0.38.1",
+    "@vitest/coverage-v8": "^2.0.5",
     "tsx": "^4.17.0",
-    "typescript": "^5.5.4"
+    "typescript": "^5.5.4",
+    "vitest": "^2.0.5"
   }
 }

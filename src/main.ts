@@ -1,5 +1,5 @@
+import { exec, getExecOutput } from "@actions/exec";
 import * as core from "@actions/core";
-import { exec, ExecOutput, getExecOutput } from "@actions/exec";
 import * as fs from "node:fs/promises";
 
 type GAMatrix = {
@@ -13,7 +13,7 @@ export type Submodule = {
   url: string;
 };
 
-type SubmoduleWithTag = Submodule & {
+export type SubmoduleWithTag = Submodule & {
   latestTag: string;
 };
 
@@ -48,7 +48,7 @@ const readFile = async (path: string): Promise<ReadFileOutput> => {
 
 export const parseGitModules = (content: string): Submodule[] => {
   const gitmodulesRegex =
-    /^\[submodule\s+"([^"]+)"\]\s*\n\s*path\s*=\s*(.+)\s*\n\s*url\s*=\s*(.+)\s*$/gm;
+    /^\s*\[submodule\s+"([^"]+)"\]\s*\n\s*path\s*=\s*(.+)\s*\n\s*url\s*=\s*(.+)\s*$/gm;
   return Array.from(content.matchAll(gitmodulesRegex)).map(
     ([_, name, path, url]) => {
       return {
@@ -60,59 +60,66 @@ export const parseGitModules = (content: string): Submodule[] => {
   );
 };
 
-const updateAllSubmodules = async (): Promise<ExecOutput> => {
-  // Allow git to update the submodules with its internal logic
-  return await getExecOutput("git submodule update --remote");
-};
-
 export const filterSubmodules = async (
-  rawUpdatedSubmodules: string,
-  detectedSubmodules: Submodule[],
-  userSubmodules: string
+  inputSubmodules: string,
+  detectedSubmodules: Submodule[]
 ): Promise<Submodule[]> => {
-  // Parse the updated submodules from the git output
-  // ASSUMPTION: The first set of single quotes is the submodule path
-  const updatedSubmodules = rawUpdatedSubmodules
-    .trim()
-    .split("\n")
-    .map((line) => line.split("'")[1]);
-  core.debug(`Updated submodules: ${toJson(updatedSubmodules)}`);
-
-  // If the user hasn't specified the submodules to update, return the intersection of the detected and updated submodules
-  if (!userSubmodules) {
-    return detectedSubmodules.filter((submodule) =>
-      updatedSubmodules.some((updated) => updated === submodule.path)
-    );
+  if (!inputSubmodules) {
+    return detectedSubmodules;
   }
 
   // Github Actions doesn't support array inputs, so the submodules are passed as a string with each submodule in a new line
-  const parsedUserSubmodules = userSubmodules
+  const parsedInputSubmodules = inputSubmodules
     .trim()
     .split("\n")
     .map((submodule) => submodule.trim().replace(/"/g, ""));
-  core.debug(`User submodules: ${toJson(parsedUserSubmodules)}`);
+  core.debug(`Input submodules: ${toJson(parsedInputSubmodules)}`);
 
-  // We only want to update user's submodule(s) if git has updated it
-  return detectedSubmodules.filter(
-    (submodule) =>
-      parsedUserSubmodules.some((parsed) => parsed === submodule.path) &&
-      updatedSubmodules.some((updated) => updated === submodule.path)
+  // We only want to update the submodules that the user has specified from the detected submodules
+  return detectedSubmodules.filter((submodule) =>
+    parsedInputSubmodules.some((parsed) => parsed === submodule.path)
   );
 };
 
-const updateToLatestTag = async (
+export const updateSubmodules = async (
+  filteredSubmodules: Submodule[]
+): Promise<Submodule[]> => {
+  const paths = filteredSubmodules.map((submodule) => submodule.path);
+
+  const { stdout } = await getExecOutput(
+    "git submodule update --remote",
+    paths
+  );
+  if (stdout.trim() === "") {
+    return [];
+  }
+
+  // Parse the updated submodules from the git output
+  // ASSUMPTION: The first set of single quotes is the submodule path
+  const updatedSubmodules = stdout
+    .trim()
+    .split("\n")
+    .map((line) => line.split("'")[1]);
+  core.debug(`Submodules parsed from git output: ${toJson(updatedSubmodules)}`);
+
+  // We only want to update the submodules that actually have new commits
+  return filteredSubmodules.filter((submodule) => {
+    return updatedSubmodules.some((updated) => updated === submodule.path);
+  });
+};
+
+export const updateToLatestTag = async (
   updatedSubmodules: Submodule[]
 ): Promise<SubmoduleWithTag[]> => {
   const submodulesWithTag = updatedSubmodules.map(async (submodule) => {
     core.info(`Fetching latest tag: ${submodule.path}`);
+    const options = { cwd: submodule.path };
 
     const latestTag = (
-      await getExecOutput("git describe --abbrev=0 --tags", [], {
-        cwd: submodule.path,
-      })
+      await getExecOutput("git describe --abbrev=0 --tags", [], options)
     ).stdout.trim();
 
-    await exec(`git reset --hard ${latestTag}`, [], { cwd: submodule.path });
+    await exec(`git reset --hard`, [latestTag], options);
 
     return { ...submodule, latestTag } as SubmoduleWithTag;
   });
@@ -143,23 +150,21 @@ export async function run(): Promise<void> {
     const detectedSubmodules = await parseGitModules(gitModulesOutput.contents);
     core.info(`Detected submodules: ${toJson(detectedSubmodules)}`);
 
-    const { stdout: rawUpdatedSubmodules } = await updateAllSubmodules();
-    if (rawUpdatedSubmodules.trim() === "") {
+    const filteredSubmodules = await filterSubmodules(
+      inputSubmodules,
+      detectedSubmodules
+    );
+    core.info(`Submodules to update: ${toJson(filteredSubmodules)}`);
+
+    const updatedSubmodules = await updateSubmodules(filteredSubmodules);
+    if (updatedSubmodules.length === 0) {
       core.info("All submodules have no new remote commits.");
       core.info("Nothing to do. Exiting...");
       return;
     }
+    core.info(`Updated submodules: ${toJson(updatedSubmodules)}`);
 
-    const filteredSubmodules = await filterSubmodules(
-      rawUpdatedSubmodules,
-      detectedSubmodules,
-      inputSubmodules
-    );
-    core.info(
-      `Submodules with new remote commits: ${toJson(filteredSubmodules)}`
-    );
-
-    const submodulesWithTag = await updateToLatestTag(filteredSubmodules);
+    const submodulesWithTag = await updateToLatestTag(updatedSubmodules);
 
     for (const { name, path, url, latestTag } of submodulesWithTag) {
       core.setOutput(`${name}--path`, path);
