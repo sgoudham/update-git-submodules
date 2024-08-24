@@ -26282,8 +26282,10 @@ const parseGitModules = (content) => __awaiter(void 0, void 0, void 0, function*
             name: name,
             path: path,
             url: url,
+            previousTag: "",
         };
     });
+    (0, logging_1.log)("Detected submodules", rawSubmodules);
     const submodules = rawSubmodules.map((submodule) => __awaiter(void 0, void 0, void 0, function* () {
         const previousTag = yield (0, exports.getTag)(submodule.path);
         return Object.assign(Object.assign({}, submodule), { previousTag });
@@ -26385,7 +26387,6 @@ function run() {
                 return;
             }
             const detectedSubmodules = yield (0, exports.parseGitModules)(gitModulesOutput.contents);
-            (0, logging_1.log)("Detected submodules", detectedSubmodules);
             const filteredSubmodules = yield (0, exports.filterSubmodules)(inputSubmodules, detectedSubmodules);
             (0, logging_1.log)("Submodules to update", filteredSubmodules);
             const updatedSubmodules = yield (0, exports.updateSubmodules)(filteredSubmodules);
@@ -26394,7 +26395,7 @@ function run() {
                 core.info("Nothing to do. Exiting...");
                 return;
             }
-            (0, logging_1.log)("Updated submodules", updatedSubmodules);
+            (0, logging_1.log)("Fetched remote commits for", updatedSubmodules);
             const submodulesAtLatestTag = yield (0, exports.updateToLatestTag)(updatedSubmodules);
             core.setOutput("json", (0, logging_1.toJson)(submodulesAtLatestTag, 0));
             core.setOutput("matrix", generateGAMatrix(submodulesAtLatestTag));

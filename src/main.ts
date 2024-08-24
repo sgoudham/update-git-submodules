@@ -65,9 +65,12 @@ export const parseGitModules = async (
         name: name,
         path: path,
         url: url,
-      };
+        previousTag: "",
+      } as Submodule;
     }
   );
+
+  log("Detected submodules", rawSubmodules);
 
   const submodules = rawSubmodules.map(async (submodule) => {
     const previousTag = await getTag(submodule.path);
@@ -202,7 +205,6 @@ export async function run(): Promise<void> {
     }
 
     const detectedSubmodules = await parseGitModules(gitModulesOutput.contents);
-    log("Detected submodules", detectedSubmodules);
 
     const filteredSubmodules = await filterSubmodules(
       inputSubmodules,
@@ -216,7 +218,7 @@ export async function run(): Promise<void> {
       core.info("Nothing to do. Exiting...");
       return;
     }
-    log("Updated submodules", updatedSubmodules);
+    log("Fetched remote commits for", updatedSubmodules);
 
     const submodulesAtLatestTag = await updateToLatestTag(updatedSubmodules);
 
