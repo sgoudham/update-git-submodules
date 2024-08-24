@@ -13,11 +13,11 @@ inputs:
     default: ""
 
 outputs:
-  updatedJson:
+  json:
     description: "A JSON array containing all the submodules that were updated."
-  updatedMatrix:
+  matrix:
     description: "A JSON array containing all the submodules that were updated for use in a matrix strategy."
-  updatedMarkdownTable:
+  markdownTable:
     description: "A markdown table containing all the submodules that were updated."
 
 runs:

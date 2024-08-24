@@ -26331,6 +26331,11 @@ function run() {
                 core.setOutput(`${name}--path`, path);
                 core.setOutput(`${name}--url`, url);
                 core.setOutput(`${name}--latestTag`, latestTag);
+                if (name !== path) {
+                    core.setOutput(`${path}--path`, path);
+                    core.setOutput(`${path}--url`, url);
+                    core.setOutput(`${path}--latestTag`, latestTag);
+                }
             }
             core.setOutput("updatedJson", toJson(submodulesWithTag, 0));
             core.setOutput("updatedMatrix", toJson({

@@ -1,7 +1,6 @@
 import { exec, getExecOutput } from "@actions/exec";
 import * as core from "@actions/core";
 import * as fs from "node:fs/promises";
-import { g } from "vitest/dist/chunks/suite.CcK46U-P";
 
 type GAMatrix = {
   name: string[];
@@ -198,10 +197,15 @@ export async function run(): Promise<void> {
       core.setOutput(`${name}--path`, path);
       core.setOutput(`${name}--url`, url);
       core.setOutput(`${name}--latestTag`, latestTag);
+      if (name !== path) {
+        core.setOutput(`${path}--path`, path);
+        core.setOutput(`${path}--url`, url);
+        core.setOutput(`${path}--latestTag`, latestTag);
+      }
     }
-    core.setOutput("updatedJson", toJson(submodulesWithTag, 0));
+    core.setOutput("json", toJson(submodulesWithTag, 0));
     core.setOutput(
-      "updatedMatrix",
+      "matrix",
       toJson(
         {
           name: submodulesWithTag.map((submodule) => submodule.name),
@@ -211,7 +215,7 @@ export async function run(): Promise<void> {
       )
     );
     core.setOutput(
-      "updatedMarkdownTable",
+      "markdownTable",
       generateMarkdownTable(submodulesWithTag)
     );
   } catch (error) {
