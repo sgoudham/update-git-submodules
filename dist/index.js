@@ -26299,16 +26299,25 @@ function run() {
                 return;
             }
             const detectedSubmodules = yield (0, exports.parseGitModules)(gitModulesOutput.contents);
-            core.info(`Detected submodules: ${toJson(detectedSubmodules)}`);
+            core.info(`Detected submodules: [${detectedSubmodules
+                .map((submodule) => submodule.path)
+                .join(", ")}]`);
+            core.debug(`Detected submodules: ${toJson(detectedSubmodules)}`);
             const filteredSubmodules = yield (0, exports.filterSubmodules)(inputSubmodules, detectedSubmodules);
-            core.info(`Submodules to update: ${toJson(filteredSubmodules)}`);
+            core.info(`Submodules to update: [${filteredSubmodules
+                .map((submodule) => submodule.path)
+                .join(", ")}]`);
+            core.debug(`Submodules to update: ${toJson(filteredSubmodules)}`);
             const updatedSubmodules = yield (0, exports.updateSubmodules)(filteredSubmodules);
             if (updatedSubmodules.length === 0) {
                 core.info("All submodules have no new remote commits.");
                 core.info("Nothing to do. Exiting...");
                 return;
             }
-            core.info(`Updated submodules: ${toJson(updatedSubmodules)}`);
+            core.info(`Updated submodules: [${updatedSubmodules
+                .map((submodule) => submodule.path)
+                .join(", ")}]`);
+            core.debug(`Updated submodules: ${toJson(updatedSubmodules)}`);
             const submodulesWithTag = yield (0, exports.updateToLatestTag)(updatedSubmodules);
             for (const { name, path, url, latestTag } of submodulesWithTag) {
                 core.setOutput(`${name}--path`, path);

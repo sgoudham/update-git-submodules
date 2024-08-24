@@ -148,13 +148,23 @@ export async function run(): Promise<void> {
     }
 
     const detectedSubmodules = await parseGitModules(gitModulesOutput.contents);
-    core.info(`Detected submodules: ${toJson(detectedSubmodules)}`);
+    core.info(
+      `Detected submodules: [${detectedSubmodules
+        .map((submodule) => submodule.path)
+        .join(", ")}]`
+    );
+    core.debug(`Detected submodules: ${toJson(detectedSubmodules)}`);
 
     const filteredSubmodules = await filterSubmodules(
       inputSubmodules,
       detectedSubmodules
     );
-    core.info(`Submodules to update: ${toJson(filteredSubmodules)}`);
+    core.info(
+      `Submodules to update: [${filteredSubmodules
+        .map((submodule) => submodule.path)
+        .join(", ")}]`
+    );
+    core.debug(`Submodules to update: ${toJson(filteredSubmodules)}`);
 
     const updatedSubmodules = await updateSubmodules(filteredSubmodules);
     if (updatedSubmodules.length === 0) {
@@ -162,7 +172,12 @@ export async function run(): Promise<void> {
       core.info("Nothing to do. Exiting...");
       return;
     }
-    core.info(`Updated submodules: ${toJson(updatedSubmodules)}`);
+    core.info(
+      `Updated submodules: [${updatedSubmodules
+        .map((submodule) => submodule.path)
+        .join(", ")}]`
+    );
+    core.debug(`Updated submodules: ${toJson(updatedSubmodules)}`);
 
     const submodulesWithTag = await updateToLatestTag(updatedSubmodules);
 
