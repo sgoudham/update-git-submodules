@@ -1,6 +1,7 @@
 import { exec, getExecOutput } from "@actions/exec";
 import * as core from "@actions/core";
 import * as fs from "node:fs/promises";
+import { log, toJson } from "./logging";
 
 type GAMatrix = {
   name: string[];
@@ -23,9 +24,6 @@ type ReadFileOutput = {
   err: string;
   contents: string;
 };
-
-const toJson = (value: any, padding: number = 2): string =>
-  JSON.stringify(value, null, padding);
 
 const readFile = async (path: string): Promise<ReadFileOutput> => {
   let err = "";
@@ -140,6 +138,26 @@ export const updateToLatestTag = async (
   return await Promise.all(submodulesWithTag);
 };
 
+const setDynamicOutputs = (
+  prefix: string,
+  submodule: SubmoduleWithLatestTag
+) => {
+  core.setOutput(`${prefix}--path`, submodule.path);
+  core.setOutput(`${prefix}--url`, submodule.url);
+  core.setOutput(`${prefix}--previousTag`, submodule.previousTag);
+  core.setOutput(`${prefix}--latestTag`, submodule.latestTag);
+};
+
+const generateGAMatrix = (submodules: SubmoduleWithLatestTag[]): string => {
+  return toJson(
+    {
+      name: submodules.map((submodule) => submodule.name),
+      include: submodules,
+    } as GAMatrix,
+    0
+  );
+};
+
 const generatePrTable = (submodules: SubmoduleWithLatestTag[]) => {
   const header =
     "| **Submodule Name** | **Submodule Path** | **Change** |\n| --- | --- | --- |";
@@ -184,23 +202,13 @@ export async function run(): Promise<void> {
     }
 
     const detectedSubmodules = await parseGitModules(gitModulesOutput.contents);
-    core.info(
-      `Detected submodules: [${detectedSubmodules
-        .map((submodule) => submodule.path)
-        .join(", ")}]`
-    );
-    core.debug(`Detected submodules: ${toJson(detectedSubmodules)}`);
+    log("Detected submodules", detectedSubmodules);
 
     const filteredSubmodules = await filterSubmodules(
       inputSubmodules,
       detectedSubmodules
     );
-    core.info(
-      `Submodules to update: [${filteredSubmodules
-        .map((submodule) => submodule.path)
-        .join(", ")}]`
-    );
-    core.debug(`Submodules to update: ${toJson(filteredSubmodules)}`);
+    log("Submodules to update", filteredSubmodules);
 
     const updatedSubmodules = await updateSubmodules(filteredSubmodules);
     if (updatedSubmodules.length === 0) {
@@ -208,45 +216,19 @@ export async function run(): Promise<void> {
       core.info("Nothing to do. Exiting...");
       return;
     }
-    core.info(
-      `Updated submodules: [${updatedSubmodules
-        .map((submodule) => submodule.path)
-        .join(", ")}]`
-    );
-    core.debug(`Updated submodules: ${toJson(updatedSubmodules)}`);
+    log("Updated submodules", updatedSubmodules);
 
     const submodulesAtLatestTag = await updateToLatestTag(updatedSubmodules);
 
-    for (const {
-      name,
-      path,
-      url,
-      previousTag,
-      latestTag,
-    } of submodulesAtLatestTag) {
-      core.setOutput(`${name}--path`, path);
-      core.setOutput(`${name}--url`, url);
-      core.setOutput(`${name}--previousTag`, previousTag);
-      core.setOutput(`${name}--latestTag`, latestTag);
-      if (name !== path) {
-        core.setOutput(`${path}--path`, path);
-        core.setOutput(`${path}--url`, url);
-        core.setOutput(`${path}--previousTag`, previousTag);
-        core.setOutput(`${path}--latestTag`, latestTag);
+    core.setOutput("json", toJson(submodulesAtLatestTag, 0));
+    core.setOutput("matrix", generateGAMatrix(submodulesAtLatestTag));
+    core.setOutput("prBody", generatePrBody(submodulesAtLatestTag));
+    for (const submodule of submodulesAtLatestTag) {
+      setDynamicOutputs(submodule.name, submodule);
+      if (submodule.name !== submodule.path) {
+        setDynamicOutputs(submodule.path, submodule);
       }
     }
-    core.setOutput("json", toJson(submodulesAtLatestTag, 0));
-    core.setOutput(
-      "matrix",
-      toJson(
-        {
-          name: submodulesAtLatestTag.map((submodule) => submodule.name),
-          include: submodulesAtLatestTag,
-        } as GAMatrix,
-        0
-      )
-    );
-    core.setOutput("prBody", generatePrBody(submodulesAtLatestTag));
   } catch (error) {
     if (error instanceof Error) core.setFailed(error.message);
   }
