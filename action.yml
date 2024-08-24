@@ -1,5 +1,5 @@
 name: "update-git-submodules"
-description: "Update git submodules to the latest tag or commit."
+description: "Update git submodules to the latest tag"
 author: "sgoudham"
 
 inputs:
@@ -16,9 +16,9 @@ outputs:
   json:
     description: "A JSON array containing all the submodules that were updated."
   matrix:
-    description: "A JSON array containing all the submodules that were updated for use in a matrix strategy."
-  markdownTable:
-    description: "A markdown table containing all the submodules that were updated."
+    description: "A JSON array containing all the submodules that were updated, intended for use in a GitHub Actions matrix strategy."
+  prBody:
+    description: "A Markdown string containing a formatted table of all the submodules that were updated, intended for use in a pull request body."
 
 runs:
   using: node20
