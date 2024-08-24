@@ -7,8 +7,7 @@ import {
   updateSubmodules,
   updateToLatestTag,
 } from "./main";
-import { ExecOutput, getExecOutput } from "@actions/exec";
-import exp from "constants";
+import { getExecOutput } from "@actions/exec";
 
 vi.mock("@actions/exec", async () => {
   return {
@@ -17,7 +16,7 @@ vi.mock("@actions/exec", async () => {
   };
 });
 
-test("extract single git submodule from .gitmodules", () => {
+test("extract single git submodule from .gitmodules", async () => {
   const input = `
   [submodule "the-best-port-ever"]
   	path = ports/mdBook
@@ -28,13 +27,23 @@ test("extract single git submodule from .gitmodules", () => {
       name: "the-best-port-ever",
       path: "ports/mdBook",
       url: "https://github.com/catppuccin/mdBook.git",
+      previousTag: "",
     },
   ];
-  const actual = parseGitModules(input);
+
+  vi.mocked(getExecOutput).mockReturnValueOnce(
+    Promise.resolve({
+      exitCode: 0,
+      stdout: "\n",
+      stderr: "",
+    })
+  );
+
+  const actual = await parseGitModules(input);
   expect(actual).toEqual(expected);
 });
 
-test("extract multiple git submodules from .gitmodules", () => {
+test("extract multiple git submodules from .gitmodules", async () => {
   const input = `
   [submodule "ports/nvim"]
   	path = ports/nvim
@@ -51,19 +60,46 @@ test("extract multiple git submodules from .gitmodules", () => {
       name: "ports/nvim",
       path: "ports/nvim",
       url: "https://github.com/catppuccin/nvim.git",
+      previousTag: "v0.1.0",
     },
     {
       name: "ports/mdBook",
       path: "ports/mdBook",
       url: "https://github.com/catppuccin/mdBook.git",
+      previousTag: "v2.2.9",
     },
     {
       name: "the-best",
       path: "ports/vscode-icons",
       url: "https://github.com/catppuccin/vscode-icons.git",
+      previousTag: "v1.0.0",
     },
   ];
-  const actual = parseGitModules(input);
+
+  vi.mocked(getExecOutput)
+    .mockReturnValueOnce(
+      Promise.resolve({
+        exitCode: 0,
+        stdout: "\nv0.1.0\n",
+        stderr: "",
+      })
+    )
+    .mockReturnValueOnce(
+      Promise.resolve({
+        exitCode: 0,
+        stdout: "\nv2.2.9\n",
+        stderr: "",
+      })
+    )
+    .mockReturnValueOnce(
+      Promise.resolve({
+        exitCode: 0,
+        stdout: "\nv1.0.0\n",
+        stderr: "",
+      })
+    );
+
+  const actual = await parseGitModules(input);
   expect(actual).toEqual(expected);
 });
 
@@ -73,11 +109,13 @@ test("filter submodules where user hasn't specified any submodules", async () =>
       name: "ports/nvim",
       path: "ports/nvim",
       url: "https://github.com/catppuccin/nvim.git",
+      previousTag: "v0.1.0",
     },
     {
       name: "ports/mdBook",
       path: "ports/mdBook",
       url: "https://github.com/catppuccin/mdBook.git",
+      previousTag: "v2.2.9",
     },
   ];
   const userSubmodules = ``;
@@ -92,11 +130,13 @@ test("filter submodules where user specifies some submodules", async () => {
       name: "ports/nvim",
       path: "ports/nvim",
       url: "https://github.com/catppuccin/nvim.git",
+      previousTag: "v0.1.0",
     },
     {
       name: "simply-the-best-repository-ever",
       path: "ports/mdBook",
       url: "https://github.com/catppuccin/mdBook.git",
+      previousTag: "v2.2.9",
     },
   ];
   const actual = await filterSubmodules(userSubmodules, detectedSubmodules);
@@ -105,6 +145,7 @@ test("filter submodules where user specifies some submodules", async () => {
       name: "simply-the-best-repository-ever",
       path: "ports/mdBook",
       url: "https://github.com/catppuccin/mdBook.git",
+      previousTag: "v2.2.9",
     },
   ]);
 });
@@ -116,11 +157,13 @@ test("filter submodules where user submodules matches detected submodules", asyn
       name: "ports/nvim",
       path: "ports/nvim",
       url: "https://github.com/catppuccin/nvim.git",
+      previousTag: "v0.1.0",
     },
     {
       name: "simply-the-best-repository-ever",
       path: "ports/mdBook",
       url: "https://github.com/catppuccin/mdBook.git",
+      previousTag: "v2.2.9",
     },
   ];
   const actual = await filterSubmodules(userSubmodules, detectedSubmodules);
@@ -133,6 +176,7 @@ test("update submodules when there are no new commits", async () => {
       name: "ports/nvim",
       path: "ports/nvim",
       url: "https://github.com/catppuccin/nvim.git",
+      previousTag: "v0.1.0",
     },
   ];
   vi.mocked(getExecOutput).mockReturnValue(
@@ -152,11 +196,13 @@ test("update submodules when there are new commits", async () => {
       name: "ports/nvim",
       path: "ports/nvim",
       url: "https://github.com/catppuccin/nvim.git",
+      previousTag: "v0.1.0",
     },
     {
       name: "simply-the-best-repository-ever",
       path: "ports/mdBook",
       url: "https://github.com/catppuccin/mdBook.git",
+      previousTag: "v2.2.9",
     },
   ];
   vi.mocked(getExecOutput).mockReturnValue(
@@ -174,6 +220,7 @@ test("update submodules when there are new commits", async () => {
       name: "simply-the-best-repository-ever",
       path: "ports/mdBook",
       url: "https://github.com/catppuccin/mdBook.git",
+      previousTag: "v2.2.9",
     },
   ]);
 });
@@ -184,11 +231,13 @@ test("update to latest tag", async () => {
       name: "ports/nvim",
       path: "ports/nvim",
       url: "https://github.com/catppuccin/nvim.git",
+      previousTag: "v0.1.0",
     },
     {
       name: "simply-the-best-repository-ever",
       path: "ports/mdBook",
       url: "https://github.com/catppuccin/mdBook.git",
+      previousTag: "v2.2.9",
     },
   ];
 
@@ -196,14 +245,14 @@ test("update to latest tag", async () => {
     .mockReturnValueOnce(
       Promise.resolve({
         exitCode: 0,
-        stdout: "\nv0.1.0\n",
+        stdout: "\nv2.0.0\n",
         stderr: "",
       })
     )
     .mockReturnValueOnce(
       Promise.resolve({
         exitCode: 0,
-        stdout: "\nv2.2.9\n",
+        stdout: "\nv4.0.0\n",
         stderr: "",
       })
     );
@@ -212,16 +261,18 @@ test("update to latest tag", async () => {
 
   expect(actual).toEqual([
     {
-      latestTag: "v0.1.0",
       name: "ports/nvim",
       path: "ports/nvim",
       url: "https://github.com/catppuccin/nvim.git",
+      previousTag: "v0.1.0",
+      latestTag: "v2.0.0",
     },
     {
-      latestTag: "v2.2.9",
       name: "simply-the-best-repository-ever",
       path: "ports/mdBook",
       url: "https://github.com/catppuccin/mdBook.git",
+      previousTag: "v2.2.9",
+      latestTag: "v4.0.0",
     },
   ] as SubmoduleWithLatestTag[]);
 });

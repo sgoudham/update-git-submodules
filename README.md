@@ -48,6 +48,7 @@ As well as the static outputs, this action will also output the following variab
 
 - `path`: The path to the submodule that was updated.
 - `url`: The GitHub URL of the submodule that was updated.
+- `previousTag`: The tag of the submodule before it was updated.
 - `latestTag`: The tag that the submodule was updated to.
 
 These dynamic outputs will be prefixed with the submodule name (and the
@@ -59,9 +60,11 @@ For example, if the submodule is named `vscode-icons` and the path is
 
 - `vscode-icons--path`
 - `vscode-icons--url`
+- `vscode-icons--previousTag`
 - `vscode-icons--latestTag`
 - `ports/vscode-icons--path`
 - `ports/vscode-icons--url`
+- `ports/vscode-icons--previousTag`
 - `ports/vscode-icons--latestTag`
 
 ## Scenarios
