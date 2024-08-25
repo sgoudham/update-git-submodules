@@ -170,6 +170,45 @@ test("filter submodules where user submodules matches detected submodules", asyn
   expect(actual).toEqual(detectedSubmodules);
 });
 
+test("filter submodules where there is an empty previousTag", async () => {
+  const userSubmodules = `\n"ports/mdBook"\n"ports/nvim"\n`;
+  const detectedSubmodules: Submodule[] = [
+    {
+      name: "ports/nvim",
+      path: "ports/nvim",
+      url: "https://github.com/catppuccin/nvim.git",
+      previousTag: "v0.1.0",
+    },
+    {
+      name: "simply-the-best-repository-ever",
+      path: "ports/mdBook",
+      url: "https://github.com/catppuccin/mdBook.git",
+      previousTag: "v2.2.9",
+    },
+    {
+      name: "ports/aur-packages",
+      path: "ports/aur-packages",
+      url: "https://github.com/catppuccin/aur-packages.git",
+      previousTag: "",
+    },
+  ];
+  const actual = await filterSubmodules(userSubmodules, detectedSubmodules);
+  expect(actual).toEqual([
+    {
+      name: "ports/nvim",
+      path: "ports/nvim",
+      url: "https://github.com/catppuccin/nvim.git",
+      previousTag: "v0.1.0",
+    },
+    {
+      name: "simply-the-best-repository-ever",
+      path: "ports/mdBook",
+      url: "https://github.com/catppuccin/mdBook.git",
+      previousTag: "v2.2.9",
+    },
+  ]);
+});
+
 test("update submodules when there are no new commits", async () => {
   const filteredSubmodules: Submodule[] = [
     {

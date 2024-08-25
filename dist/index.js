@@ -26243,7 +26243,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.updateToLatestTag = exports.updateSubmodules = exports.filterSubmodules = exports.parseGitModules = exports.getTag = void 0;
+exports.updateToLatestTag = exports.updateSubmodules = exports.filterSubmodules = exports.parseGitModules = exports.getPreviousTag = exports.getTag = void 0;
 exports.run = run;
 const exec_1 = __nccwpck_require__(7775);
 const core = __importStar(__nccwpck_require__(9093));
@@ -26275,6 +26275,16 @@ const getTag = (path) => __awaiter(void 0, void 0, void 0, function* () {
     return (yield (0, exec_1.getExecOutput)("git describe --abbrev=0 --tags", [], options)).stdout.trim();
 });
 exports.getTag = getTag;
+const getPreviousTag = (path) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        return yield (0, exports.getTag)(path);
+    }
+    catch (error) {
+        core.info(`'${path}': Repository has no tags. Continuing...`);
+        return undefined;
+    }
+});
+exports.getPreviousTag = getPreviousTag;
 const parseGitModules = (content) => __awaiter(void 0, void 0, void 0, function* () {
     const gitmodulesRegex = /^\s*\[submodule\s+"([^"]+)"\]\s*\n\s*path\s*=\s*(.+)\s*\n\s*url\s*=\s*(.+)\s*$/gm;
     const rawSubmodules = Array.from(content.matchAll(gitmodulesRegex)).map(([_, name, path, url]) => {
@@ -26285,17 +26295,19 @@ const parseGitModules = (content) => __awaiter(void 0, void 0, void 0, function*
             previousTag: "",
         };
     });
-    (0, logging_1.log)("Detected submodules", rawSubmodules);
+    (0, logging_1.log)("Parsed submodules", rawSubmodules);
     const submodules = rawSubmodules.map((submodule) => __awaiter(void 0, void 0, void 0, function* () {
-        const previousTag = yield (0, exports.getTag)(submodule.path);
+        const previousTag = yield (0, exports.getPreviousTag)(submodule.path);
         return Object.assign(Object.assign({}, submodule), { previousTag });
     }));
     return yield Promise.all(submodules);
 });
 exports.parseGitModules = parseGitModules;
 const filterSubmodules = (inputSubmodules, detectedSubmodules) => __awaiter(void 0, void 0, void 0, function* () {
+    // We only want to update the submodules that actually have an existing tag
+    const validSubmodules = detectedSubmodules.filter((submodule) => submodule.previousTag);
     if (!inputSubmodules) {
-        return detectedSubmodules;
+        return validSubmodules;
     }
     // Github Actions doesn't support array inputs, so the submodules are passed as a string with each submodule in a new line
     const parsedInputSubmodules = inputSubmodules
@@ -26304,7 +26316,7 @@ const filterSubmodules = (inputSubmodules, detectedSubmodules) => __awaiter(void
         .map((submodule) => submodule.trim().replace(/"/g, ""));
     core.debug(`Input submodules: ${(0, logging_1.toJson)(parsedInputSubmodules)}`);
     // We only want to update the submodules that the user has specified from the detected submodules
-    return detectedSubmodules.filter((submodule) => parsedInputSubmodules.some((parsed) => parsed === submodule.path));
+    return validSubmodules.filter((submodule) => parsedInputSubmodules.some((parsed) => parsed === submodule.path));
 });
 exports.filterSubmodules = filterSubmodules;
 const updateSubmodules = (filteredSubmodules) => __awaiter(void 0, void 0, void 0, function* () {
@@ -26387,6 +26399,7 @@ function run() {
                 return;
             }
             const detectedSubmodules = yield (0, exports.parseGitModules)(gitModulesOutput.contents);
+            (0, logging_1.log)("Detected Submodules", detectedSubmodules);
             const filteredSubmodules = yield (0, exports.filterSubmodules)(inputSubmodules, detectedSubmodules);
             (0, logging_1.log)("Submodules to update", filteredSubmodules);
             const updatedSubmodules = yield (0, exports.updateSubmodules)(filteredSubmodules);

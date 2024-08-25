@@ -7,10 +7,6 @@ This GitHub Action updates one or more git submodules in a repository. It **does
 not** commit or push these changes back to the repository, please see the
 "[Scenarios](#scenarios)" section for examples on how to do this.
 
-> [!IMPORTANT]
-> This action requires that each submodule has at least one tag, otherwise it
-> will fail.
-
 > [!WARNING]
 > This is still a **work in progress**. Please pin to a specific commit hash to
 > avoid unexpected behaviour in your workflows.

@@ -12,7 +12,7 @@ export type Submodule = {
   name: string;
   path: string;
   url: string;
-  previousTag: string;
+  previousTag?: string;
 };
 
 export type SubmoduleWithLatestTag = Submodule & {
@@ -53,6 +53,17 @@ export const getTag = async (path: string): Promise<string> => {
   ).stdout.trim();
 };
 
+export const getPreviousTag = async (
+  path: string
+): Promise<string | undefined> => {
+  try {
+    return await getTag(path);
+  } catch (error) {
+    core.info(`'${path}': Repository has no tags. Continuing...`);
+    return undefined;
+  }
+};
+
 export const parseGitModules = async (
   content: string
 ): Promise<Submodule[]> => {
@@ -70,10 +81,10 @@ export const parseGitModules = async (
     }
   );
 
-  log("Detected submodules", rawSubmodules);
+  log("Parsed submodules", rawSubmodules);
 
   const submodules = rawSubmodules.map(async (submodule) => {
-    const previousTag = await getTag(submodule.path);
+    const previousTag = await getPreviousTag(submodule.path);
     return { ...submodule, previousTag } as Submodule;
   });
 
@@ -84,8 +95,13 @@ export const filterSubmodules = async (
   inputSubmodules: string,
   detectedSubmodules: Submodule[]
 ): Promise<Submodule[]> => {
+  // We only want to update the submodules that actually have an existing tag
+  const validSubmodules = detectedSubmodules.filter(
+    (submodule) => submodule.previousTag
+  );
+
   if (!inputSubmodules) {
-    return detectedSubmodules;
+    return validSubmodules;
   }
 
   // Github Actions doesn't support array inputs, so the submodules are passed as a string with each submodule in a new line
@@ -96,7 +112,7 @@ export const filterSubmodules = async (
   core.debug(`Input submodules: ${toJson(parsedInputSubmodules)}`);
 
   // We only want to update the submodules that the user has specified from the detected submodules
-  return detectedSubmodules.filter((submodule) =>
+  return validSubmodules.filter((submodule) =>
     parsedInputSubmodules.some((parsed) => parsed === submodule.path)
   );
 };
@@ -205,6 +221,7 @@ export async function run(): Promise<void> {
     }
 
     const detectedSubmodules = await parseGitModules(gitModulesOutput.contents);
+    log("Detected Submodules", detectedSubmodules);
 
     const filteredSubmodules = await filterSubmodules(
       inputSubmodules,
