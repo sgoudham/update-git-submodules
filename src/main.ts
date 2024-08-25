@@ -1,7 +1,7 @@
 import { exec, getExecOutput } from "@actions/exec";
 import * as core from "@actions/core";
 import * as fs from "node:fs/promises";
-import { log as logInfoAndDebug, toJson } from "./logging";
+import { logInfoAndDebug, toJson } from "./logging";
 import { multiplePrBody, singlePrBody } from "./markdown";
 
 type GAMatrix = {

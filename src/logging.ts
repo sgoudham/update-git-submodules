@@ -4,7 +4,7 @@ import * as core from "@actions/core";
 export const toJson = (value: any, padding: number = 2): string =>
   JSON.stringify(value, null, padding);
 
-export const log = (message: string, submodules: Submodule[]): void => {
+export const logInfoAndDebug = (message: string, submodules: Submodule[]): void => {
   const submodulePaths = submodules
     .map((submodule) => submodule.path)
     .join(", ");

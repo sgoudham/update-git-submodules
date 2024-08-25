@@ -26189,18 +26189,18 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.log = exports.toJson = void 0;
+exports.logInfoAndDebug = exports.toJson = void 0;
 const core = __importStar(__nccwpck_require__(9093));
 const toJson = (value, padding = 2) => JSON.stringify(value, null, padding);
 exports.toJson = toJson;
-const log = (message, submodules) => {
+const logInfoAndDebug = (message, submodules) => {
     const submodulePaths = submodules
         .map((submodule) => submodule.path)
         .join(", ");
     core.info(`${message}: [${submodulePaths}]`);
     core.debug(`${message}: ${(0, exports.toJson)(submodules)}`);
 };
-exports.log = log;
+exports.logInfoAndDebug = logInfoAndDebug;
 
 
 /***/ }),
@@ -26296,7 +26296,7 @@ const parseGitModules = (content) => __awaiter(void 0, void 0, void 0, function*
             previousTag: "",
         };
     });
-    (0, logging_1.log)("Parsed submodules", rawSubmodules);
+    (0, logging_1.logInfoAndDebug)("Parsed submodules", rawSubmodules);
     const submodules = rawSubmodules.map((submodule) => __awaiter(void 0, void 0, void 0, function* () {
         const previousTag = yield (0, exports.getPreviousTag)(submodule.path);
         return Object.assign(Object.assign({}, submodule), { previousTag });
@@ -26382,16 +26382,16 @@ function run() {
                 return;
             }
             const detectedSubmodules = yield (0, exports.parseGitModules)(gitModulesOutput.contents);
-            (0, logging_1.log)("Detected Submodules", detectedSubmodules);
+            (0, logging_1.logInfoAndDebug)("Detected Submodules", detectedSubmodules);
             const filteredSubmodules = yield (0, exports.filterSubmodules)(inputSubmodules, detectedSubmodules);
-            (0, logging_1.log)("Submodules to update", filteredSubmodules);
+            (0, logging_1.logInfoAndDebug)("Submodules to update", filteredSubmodules);
             const updatedSubmodules = yield (0, exports.updateSubmodules)(filteredSubmodules);
             if (updatedSubmodules.length === 0) {
                 core.info("All submodules have no new remote commits.");
                 core.info("Nothing to do. Exiting...");
                 return;
             }
-            (0, logging_1.log)("Fetched remote commits for", updatedSubmodules);
+            (0, logging_1.logInfoAndDebug)("Fetched remote commits for", updatedSubmodules);
             const submodulesAtLatestTag = yield (0, exports.updateToLatestTag)(updatedSubmodules);
             core.setOutput("json", (0, logging_1.toJson)(submodulesAtLatestTag, 0));
             core.setOutput("matrix", generateGAMatrix(submodulesAtLatestTag));
