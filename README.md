@@ -22,7 +22,8 @@ latest commit.
 - It **does not** update submodules to the latest commit as I focused on tags for
   the initial release. I'd personally recommend using
   [Renovate](https://docs.renovatebot.com/modules/manager/git-submodules/) or
-  equivalent if you'd like submodules to be updated to the latest commit.
+  equivalent if you'd like submodules to be updated to the latest commit. I will
+  most likely add this functionality in the future.
 
 ## Usage
 
