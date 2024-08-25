@@ -1,7 +1,7 @@
 {
   "name": "update-git-submodules",
   "description": "Update git submodules to the latest tag or commit.",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "author": "Goudham <sgoudham@gmail.com>",
   "private": true,
   "homepage": "https://github.com/sgoudham/update-git-submodules",
