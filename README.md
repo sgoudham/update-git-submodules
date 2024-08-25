@@ -6,14 +6,23 @@
 This GitHub Action updates one or more git submodules in a repository to the
 latest tag. The primary use case for this action is to be used across the
 [Catppuccin](https://github.com/catppuccin) GitHub organisation, allowing
-repositories to update submodules to known stable versions.
+repositories to update their submodules to the latest git tag instead of the
+latest commit.
 
-It **does not** commit or push these changes back to the repository, please see
-the "[Scenarios](#scenarios)" section for examples on how to do this.
+### What it does
 
-> [!WARNING]
-> This is still a **work in progress**. Please pin to a specific commit hash to
-> avoid unexpected behaviour in your workflows.
+- It automatically parses `.gitmodules` and updates one or more submodules to the
+  latest git tag.
+- It allows the user to specify which submodules to update.
+
+### What it doesn't do
+
+- It **does not** commit or push these changes back to the repository. Please
+  see the "[Scenarios](#scenarios)" section for examples on how to do this.
+- It **does not** update submodules to the latest commit as I focused on tags for
+  the initial release. I'd personally recommend using
+  [Renovate](https://docs.renovatebot.com/modules/manager/git-submodules/) or
+  equivalent if you'd like submodules to be updated to the latest commit.
 
 ## Usage
 
@@ -152,7 +161,52 @@ steps:
 `workflow.yml`
 
 ```yaml
+- name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          submodules: "recursive"
+          fetch-depth: 0
 
+      - name: Update Submodules
+        id: submodules
+        uses: "sgoudham/update-git-submodules@main"
+        with:
+          submodules: |
+            ${{ env.nvim }}
+            ${{ env.mdBook }}
+
+      - name: Parse Submodule Outputs
+        id: tags
+        run: |
+          echo "nvimTag=${{ steps.submodules.outputs[format('{0}--latestTag', env.nvim)] }}" >> "$GITHUB_OUTPUT"
+          echo 'nvimPrBody<<EOF' >> $GITHUB_OUTPUT
+          echo "${{ steps.submodules.outputs[format('{0}--prBody', env.nvim)] }}" >> "$GITHUB_OUTPUT"
+          echo 'EOF' >> $GITHUB_OUTPUT
+
+          echo "mdBookTag=${{ steps.submodules.outputs[format('{0}--latestTag', env.mdBook)] }}" >> "$GITHUB_OUTPUT"
+          echo 'mdBookPrBody<<EOF' >> $GITHUB_OUTPUT
+          echo "${{ steps.submodules.outputs[format('{0}--prBody', env.mdBook)] }}" >> "$GITHUB_OUTPUT"
+          echo 'EOF' >> $GITHUB_OUTPUT
+
+      - name: PR for Neovim
+        uses: peter-evans/create-pull-request@v6
+        if: ${{ steps.tags.outputs.nvimTag }}
+        with:
+          add-paths: ${{ env.nvim }}
+          commit-message: "feat: update catppuccin/nvim to ${{ steps.tags.outputs.nvimTag }}"
+          branch: "feat/update-catppuccin-nvim-${{ steps.tags.outputs.nvimTag }}"
+          title: "feat: update catppuccin/nvim submodule to ${{ steps.tags.outputs.nvimTag }}"
+          body: ${{ steps.tags.outputs.nvimPrBody }}
+
+      - name: PR for mdBook
+        uses: peter-evans/create-pull-request@v6
+        if: ${{ steps.tags.outputs.mdBookTag }}
+        with:
+          add-paths: ${{ env.mdBook }}
+          commit-message: "feat: update catppuccin/mdBook to ${{ steps.tags.outputs.mdBookTag }}"
+          branch: "feat/update-catppuccin-mdBook-${{ steps.tags.outputs.mdBookTag }}"
+          title: "feat: update catppuccin/mdBook submodule to ${{ steps.tags.outputs.mdBookTag }}"
+          body: ${{ steps.tags.outputs.mdBookPrBody }}
 ```
 
 ## License
