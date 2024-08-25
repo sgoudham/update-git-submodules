@@ -1,5 +1,5 @@
 name: "update-git-submodules"
-description: "Update git submodules to the latest tag"
+description: "Update git submodule(s) to their latest tag"
 author: "sgoudham"
 
 inputs:
