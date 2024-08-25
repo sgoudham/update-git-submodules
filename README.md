@@ -161,7 +161,48 @@ steps:
 `workflow.yml`
 
 ```yaml
-- name: Checkout Repository
+jobs:
+  update-submodule:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        submodule: [ports/nvim, ports/mdBook]
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          submodules: "recursive"
+          fetch-depth: 0
+
+      - name: Update Submodules
+        id: submodules
+        uses: "sgoudham/update-git-submodules@main"
+        with:
+          submodules: ${{ matrix.submodule }}
+
+      - name: Create PR
+        uses: peter-evans/create-pull-request@v6
+        if: ${{ steps.submodules.outputs[format('{0}--latestTag', matrix.submodule)] }}
+        with:
+          commit-message: "feat: update ${{ matrix.submodule }} to ${{ steps.submodules.outputs[format('{0}--latestTag', matrix.submodule)] }}"
+          branch: "feat/update-${{ matrix.submodule }}-${{ steps.submodules.outputs[format('{0}--latestTag', matrix.submodule)] }}"
+          title: "feat: update ${{ matrix.submodule }} submodule to ${{ steps.submodules.outputs[format('{0}--latestTag', matrix.submodule)] }}"
+          body: ${{ steps.submodules.outputs.prBody }}
+```
+
+<details>
+<summary>Drop me down to view a version where multiple pull requests are created in the same job (not recommended!)</summary>
+
+```yaml
+jobs:
+  update-submodules:
+    runs-on: ubuntu-latest
+    env:
+      nvim: "ports/nvim"
+      mdBook: "ports/mdBook"
+
+    steps:
+      - name: Checkout Repository
         uses: actions/checkout@v4
         with:
           submodules: "recursive"
@@ -208,6 +249,8 @@ steps:
           title: "feat: update catppuccin/mdBook submodule to ${{ steps.tags.outputs.mdBookTag }}"
           body: ${{ steps.tags.outputs.mdBookPrBody }}
 ```
+
+</details>
 
 ## License
 
