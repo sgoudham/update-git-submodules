@@ -30,7 +30,7 @@ latest commit.
 <!-- x-release-please-start-version -->
 
 ```yaml
-- uses: sgoudham/update-git-submodules@v0.0.0
+- uses: sgoudham/update-git-submodules@v1.0.0
   with:
     # The path to the '.gitmodules' file.
     #
@@ -110,7 +110,7 @@ steps:
 
   - name: Update Submodules
     id: submodules
-    uses: "sgoudham/update-git-submodules@v0.0.0"
+    uses: "sgoudham/update-git-submodules@v1.0.0"
 
   - name: Create PR
     uses: peter-evans/create-pull-request@v6
@@ -134,7 +134,7 @@ steps:
 
   - name: Update Submodules
     id: submodules
-    uses: "sgoudham/update-git-submodules@v0.0.0"
+    uses: "sgoudham/update-git-submodules@v1.0.0"
 
   - name: Create PR
     uses: peter-evans/create-pull-request@v6
@@ -179,7 +179,7 @@ jobs:
 
       - name: Update Submodules
         id: submodules
-        uses: "sgoudham/update-git-submodules@v0.0.0"
+        uses: "sgoudham/update-git-submodules@v1.0.0"
         with:
           submodules: ${{ matrix.submodule }}
 
@@ -213,7 +213,7 @@ jobs:
 
       - name: Update Submodules
         id: submodules
-        uses: "sgoudham/update-git-submodules@v0.0.0"
+        uses: "sgoudham/update-git-submodules@v1.0.0"
         with:
           submodules: |
             ${{ env.nvim }}
