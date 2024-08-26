@@ -183,8 +183,6 @@ steps:
 
 ### Update multiple submodules and create multiple pull requests
 
-`workflow.yml`
-
 ```yaml
 jobs:
   update-submodule:
