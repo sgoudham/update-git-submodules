@@ -30797,6 +30797,7 @@ const updateToLatestTag = (updatedSubmodules) => __awaiter(void 0, void 0, void 
 exports.updateToLatestTag = updateToLatestTag;
 const setDynamicOutputs = (prefix, submodule) => {
     var _a, _b;
+    core.setOutput(`${prefix}--updated`, true);
     core.setOutput(`${prefix}--path`, submodule.path);
     core.setOutput(`${prefix}--url`, submodule.url);
     core.setOutput(`${prefix}--previousShortCommitSha`, submodule.previousShortCommitSha);

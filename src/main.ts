@@ -185,6 +185,7 @@ export const updateToLatestTag = async (
 };
 
 export const setDynamicOutputs = (prefix: string, submodule: Submodule) => {
+  core.setOutput(`${prefix}--updated`, true);
   core.setOutput(`${prefix}--path`, submodule.path);
   core.setOutput(`${prefix}--url`, submodule.url);
   core.setOutput(

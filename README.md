@@ -58,6 +58,7 @@ their submodules to the latest git tag instead of the latest commit.
 As well as the static outputs, this action will also output the following
 variables for each submodule that was updated:
 
+- `${prefix}--updated`: Always set to `true` to indicate that the submodule was updated.
 - `${prefix}--path`: The path to the submodule that was updated.
 - `${prefix}--url`: The GitHub URL of the submodule that was updated.
 - `${prefix}--previousShortCommitSha`: The short commit SHA of the submodule
@@ -76,6 +77,7 @@ The `${prefix}` is the submodule name or the submodule path if the name is
 different to the path. For example, if the submodule is named `vscode-icons` and
 the path is `ports/vscode-icons`, the dynamic outputs will be:
 
+- `vscode-icons--updated`
 - `vscode-icons--path`
 - `vscode-icons--url`
 - `vscode-icons--previousShortCommitSha`
@@ -85,6 +87,7 @@ the path is `ports/vscode-icons`, the dynamic outputs will be:
 - `vscode-icons--previousTag`
 - `vscode-icons--latestTag`
 - `vscode-icons--prBody`
+- `ports/vscode-icons--updated`
 - `ports/vscode-icons--path`
 - `ports/vscode-icons--url`
 - `ports/vscode-icons--previousShortCommitSha`
@@ -147,11 +150,11 @@ steps:
 
   - name: Create PR
     uses: peter-evans/create-pull-request@v6
-    if: ${{ steps.submodules.outputs['vscode-icons--latestTag'] }}
+    if: ${{ steps.submodules.outputs['vscode-icons--updated'] }}
     with:
-      commit-message: "feat: update catppuccin/vscode-icons to ${{ steps.submodules.outputs['vscode-icons--latestTag'] }}"
-      branch: "feat/update-vscode-icons-${{ steps.submodules.outputs['vscode-icons--latestTag'] }}"
-      title: "feat: update catppuccin/vscode-icons submodule to ${{ steps.submodules.outputs['vscode-icons--latestTag'] }}"
+      commit-message: "feat: update catppuccin/vscode-icons to ${{ steps.submodules.outputs['vscode-icons--latestShortCommitSha'] }}"
+      branch: "feat/update-vscode-icons-${{ steps.submodules.outputs['vscode-icons--latestShortCommitSha'] }}"
+      title: "feat: update catppuccin/vscode-icons submodule to ${{ steps.submodules.outputs['vscode-icons--latestShortCommitSha'] }}"
       body: ${{ steps.submodules.outputs.prBody }}
 ```
 

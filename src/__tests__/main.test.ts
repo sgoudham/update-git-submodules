@@ -317,5 +317,5 @@ test("set GitHub Action dynamic outputs", async () => {
 
   setDynamicOutputs(prefix, submodule);
 
-  expect(setOutput).toHaveBeenCalledTimes(9);
+  expect(setOutput).toHaveBeenCalledTimes(10);
 });
