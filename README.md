@@ -115,7 +115,7 @@ the path is `ports/vscode-icons`, the dynamic outputs will be:
   id: submodules
   uses: sgoudham/update-git-submodules@v2.0.0
   with:
-    strategy: "tag"
+    strategy: tag
 ```
 
 ### Update single submodule
@@ -128,11 +128,20 @@ the path is `ports/vscode-icons`, the dynamic outputs will be:
     submodules: ports/vscode-icons
 ```
 
-## Creating Pull Requests
+### Update multiple submodules
 
-1. [Update single submodule and create pull request](#update-single-submodule-and-create-pull-request)
-2. [Update multiple submodules and create one pull request](#update-multiple-submodules-and-create-one-pull-request)
-3. [Update multiple submodules and create multiple pull requests](#update-multiple-submodules-and-create-multiple-pull-requests)
+```yaml
+- name: Update Submodules
+  id: submodules
+  uses: sgoudham/update-git-submodules@v2.0.0
+  with:
+    submodules: |
+      ports/nvim
+      ports/mdBook
+      ports/vscode-icons
+```
+
+## Creating Pull Requests
 
 ### Update single submodule and create pull request
 
