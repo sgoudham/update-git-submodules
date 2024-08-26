@@ -4,26 +4,20 @@
 </h1>
 
 This GitHub Action updates one or more git submodules in a repository to the
-latest tag. The primary use case for this action is to be used across the
-[Catppuccin](https://github.com/catppuccin) GitHub organisation, allowing
-repositories to update their submodules to the latest git tag instead of the
-latest commit.
+latest commit or tag. The primary use case for this action is to be used across
+[Catppuccin](https://github.com/catppuccin), allowing repositories to update
+their submodules to the latest git tag instead of the latest commit.
 
 ### What it does
 
-- It automatically parses `.gitmodules` and updates one or more submodules to the
-  latest git tag.
-- It allows the user to specify which submodules to update.
+- It automatically parses the `.gitmodules` file to find submodules.
+- It updates one or more submodules to the latest commit or git tag.
+- It allows the user to filter which submodules to update.
 
 ### What it doesn't do
 
 - It **does not** commit or push these changes back to the repository. Please
-  see the "[Scenarios](#scenarios)" section for examples on how to do this.
-- It **does not** update submodules to the latest commit as I focused on tags for
-  the initial release. I'd personally recommend using
-  [Renovate](https://docs.renovatebot.com/modules/manager/git-submodules/) or
-  equivalent if you'd like submodules to be updated to the latest commit. I will
-  most likely add this functionality in the future.
+  see the "[Creating Pull Requests](#creating-pull-requests)" section for examples on how to do this.
 
 ## Usage
 
@@ -36,6 +30,11 @@ latest commit.
     #
     # Defaults to '.gitmodules' in the root of the repository.
     gitmodulesPath: ""
+
+    # The strategy to use when updating the submodules. Can be either 'commit' or 'tag'.
+    #
+    # Defaults to 'commit'.
+    strategy: ""
 
     # The git submodule(s) to update, the path should be the
     # same as the one specified in the '.gitmodules' file.
@@ -51,54 +50,91 @@ latest commit.
 - `json`: A JSON array containing all the submodules that were updated.
 - `matrix`: A JSON array containing all the submodules that were updated,
   intended for use in a GitHub Actions matrix strategy.
-- `prBody`: A Markdown string containing a formatted table of all the submodules
+- `prBody`: A multi-line Markdown string containing a formatted table of all the submodules
   that were updated, intended for use in a pull request body.
 
 ### Dynamic Outputs
 
-As well as the static outputs, this action will also output the following variables:
+As well as the static outputs, this action will also output the following
+variables for each submodule that was updated:
 
-- `path`: The path to the submodule that was updated.
-- `url`: The GitHub URL of the submodule that was updated.
-- `previousTag`: The tag of the submodule before it was updated.
-- `latestTag`: The tag that the submodule was updated to.
-- `prBody`: A Markdown string intended for use in a pull request body.
+- `${prefix}--updated`: Always set to `true` to indicate that the submodule was updated.
+- `${prefix}--path`: The path to the submodule that was updated.
+- `${prefix}--url`: The GitHub URL of the submodule that was updated.
+- `${prefix}--previousShortCommitSha`: The short commit SHA of the submodule
+  before it was updated.
+- `${prefix}--previousCommitSha`: The commit SHA of the submodule before it
+  was updated.
+- `${prefix}--latestShortCommitSha`: The short commit SHA of the submodule
+  after it was updated.
+- `${prefix}--latestCommitSha`: The commit SHA of the submodule after it was
+  updated.
+- `${prefix}--previousTag`: The tag of the submodule before it was updated. **May not exist if the submodule does not have any tags.**
+- `${prefix}--latestTag`: The tag that the submodule was updated to. **Only available when the strategy is set to 'tag'.**
+- `${prefix}--prBody`: A multi-line Markdown string intended for use in a pull request body.
 
-These dynamic outputs will be prefixed with the submodule name (and the
-submodule path if the name is different to the path) followed by two hyphens
-(`--`).
+The `${prefix}` is the submodule name or the submodule path if the name is
+different to the path. For example, if the submodule is named `vscode-icons` and
+the path is `ports/vscode-icons`, the dynamic outputs will be:
 
-For example, if the submodule is named `vscode-icons` and the path is
-`ports/vscode-icons`, the dynamic outputs will be:
-
+- `vscode-icons--updated`
 - `vscode-icons--path`
 - `vscode-icons--url`
+- `vscode-icons--previousShortCommitSha`
+- `vscode-icons--previousCommitSha`
+- `vscode-icons--latestShortCommitSha`
+- `vscode-icons--latestCommitSha`
 - `vscode-icons--previousTag`
 - `vscode-icons--latestTag`
 - `vscode-icons--prBody`
+- `ports/vscode-icons--updated`
 - `ports/vscode-icons--path`
 - `ports/vscode-icons--url`
+- `ports/vscode-icons--previousShortCommitSha`
+- `ports/vscode-icons--previousCommitSha`
+- `ports/vscode-icons--latestShortCommitSha`
+- `ports/vscode-icons--latestCommitSha`
 - `ports/vscode-icons--previousTag`
 - `ports/vscode-icons--latestTag`
 - `ports/vscode-icons--prBody`
 
-## Scenarios
+## Examples
 
-1. [Update one submodule and create one pull request](#update-one-submodule-and-create-one-pull-request)
+### Update all submodules to the latest commit
+
+```yaml
+- name: Update Submodules
+  id: submodules
+  uses: sgoudham/update-git-submodules@v1.0.0
+```
+
+### Update all submodules to the latest tag
+
+```yaml
+- name: Update Submodules
+  id: submodules
+  uses: sgoudham/update-git-submodules@v1.0.0
+  with:
+    strategy: "tag"
+```
+
+### Update single submodule
+
+```yaml
+- name: Update Submodule
+  id: submodules
+  uses: sgoudham/update-git-submodules@v1.0.0
+  with:
+    submodules: ports/vscode-icons
+```
+
+## Creating Pull Requests
+
+1. [Update single submodule and create pull request](#update-single-submodule-and-create-pull-request)
 2. [Update multiple submodules and create one pull request](#update-multiple-submodules-and-create-one-pull-request)
 3. [Update multiple submodules and create multiple pull requests](#update-multiple-submodules-and-create-multiple-pull-requests)
 
-### Update one submodule and create one pull request
-
-`.gitmodules`
-
-```ini
-[submodule "vscode-icons"]
-	path = ports/vscode-icons
-	url = https://github.com/catppuccin/vscode-icons.git
-```
-
-`workflow.yml`
+### Update single submodule and create pull request
 
 ```yaml
 steps:
@@ -110,15 +146,15 @@ steps:
 
   - name: Update Submodules
     id: submodules
-    uses: "sgoudham/update-git-submodules@v1.0.0"
+    uses: sgoudham/update-git-submodules@v1.0.0
 
   - name: Create PR
     uses: peter-evans/create-pull-request@v6
-    if: ${{ steps.submodules.outputs['vscode-icons--latestTag'] }}
+    if: ${{ steps.submodules.outputs['vscode-icons--updated'] }}
     with:
-      commit-message: "feat: update catppuccin/vscode-icons to ${{ steps.submodules.outputs['vscode-icons--latestTag'] }}"
-      branch: "feat/update-vscode-icons-${{ steps.submodules.outputs['vscode-icons--latestTag'] }}"
-      title: "feat: update catppuccin/vscode-icons submodule to ${{ steps.submodules.outputs['vscode-icons--latestTag'] }}"
+      commit-message: "feat: update catppuccin/vscode-icons to ${{ steps.submodules.outputs['vscode-icons--latestShortCommitSha'] }}"
+      branch: "feat/update-vscode-icons-${{ steps.submodules.outputs['vscode-icons--latestShortCommitSha'] }}"
+      title: "feat: update catppuccin/vscode-icons submodule to ${{ steps.submodules.outputs['vscode-icons--latestShortCommitSha'] }}"
       body: ${{ steps.submodules.outputs.prBody }}
 ```
 
@@ -134,7 +170,7 @@ steps:
 
   - name: Update Submodules
     id: submodules
-    uses: "sgoudham/update-git-submodules@v1.0.0"
+    uses: sgoudham/update-git-submodules@v1.0.0
 
   - name: Create PR
     uses: peter-evans/create-pull-request@v6
@@ -147,20 +183,6 @@ steps:
 
 ### Update multiple submodules and create multiple pull requests
 
-`.gitmodules`
-
-```ini
-[submodule "ports/nvim"]
-	path = ports/nvim
-	url = https://github.com/catppuccin/nvim.git
-[submodule "ports/mdBook"]
-	path = ports/mdBook
-	url = https://github.com/catppuccin/mdBook.git
-[submodule "ports/vscode-icons"]
-	path = ports/vscode-icons
-	url = https://github.com/catppuccin/vscode-icons.git
-```
-
 `workflow.yml`
 
 ```yaml
@@ -169,7 +191,17 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        submodule: [ports/nvim, ports/mdBook]
+        submodule: [ports/nvim, ports/mdBook, ports/vscode-icons]
+        include:
+          - submodule: ports/nvim # Update to the latest tag
+            strategy: "tag"
+            latest: "latestTag"
+          - submodule: ports/mdBook # Update to the latest commit
+            strategy: "commit"
+            latest: "latestShortCommitSha"
+          - submodule: ports/vscode-icons # Update to the latest commit
+            strategy: "commit"
+            latest: "latestShortCommitSha"
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -179,81 +211,20 @@ jobs:
 
       - name: Update Submodules
         id: submodules
-        uses: "sgoudham/update-git-submodules@v1.0.0"
+        uses: sgoudham/update-git-submodules@v1.0.0
         with:
           submodules: ${{ matrix.submodule }}
+          strategy: ${{ matrix.strategy }}
 
       - name: Create PR
         uses: peter-evans/create-pull-request@v6
-        if: ${{ steps.submodules.outputs[format('{0}--latestTag', matrix.submodule)] }}
+        if: ${{ steps.submodules.outputs[format('{0}--updated', matrix.submodule)] }}
         with:
-          commit-message: "feat: update ${{ matrix.submodule }} to ${{ steps.submodules.outputs[format('{0}--latestTag', matrix.submodule)] }}"
-          branch: "feat/update-${{ matrix.submodule }}-${{ steps.submodules.outputs[format('{0}--latestTag', matrix.submodule)] }}"
-          title: "feat: update ${{ matrix.submodule }} submodule to ${{ steps.submodules.outputs[format('{0}--latestTag', matrix.submodule)] }}"
+          commit-message: "feat: update ${{ matrix.submodule }} to ${{ steps.submodules.outputs[format('{0}--{1}', matrix.submodule, matrix.latest)] }}"
+          branch: "feat/update-${{ matrix.submodule }}-${{ steps.submodules.outputs[format('{0}--{1}', matrix.submodule, matrix.latest)] }}"
+          title: "feat: update ${{ matrix.submodule }} submodule to ${{ steps.submodules.outputs[format('{0}--{1}', matrix.submodule, matrix.latest)] }}"
           body: ${{ steps.submodules.outputs.prBody }}
 ```
-
-<details>
-<summary>Drop me down to view a version where multiple pull requests are created in the same job (not recommended!)</summary>
-
-```yaml
-jobs:
-  update-submodules:
-    runs-on: ubuntu-latest
-    env:
-      nvim: "ports/nvim"
-      mdBook: "ports/mdBook"
-
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-        with:
-          submodules: "recursive"
-          fetch-depth: 0
-
-      - name: Update Submodules
-        id: submodules
-        uses: "sgoudham/update-git-submodules@v1.0.0"
-        with:
-          submodules: |
-            ${{ env.nvim }}
-            ${{ env.mdBook }}
-
-      - name: Parse Submodule Outputs
-        id: tags
-        run: |
-          echo "nvimTag=${{ steps.submodules.outputs[format('{0}--latestTag', env.nvim)] }}" >> "$GITHUB_OUTPUT"
-          echo 'nvimPrBody<<EOF' >> $GITHUB_OUTPUT
-          echo "${{ steps.submodules.outputs[format('{0}--prBody', env.nvim)] }}" >> "$GITHUB_OUTPUT"
-          echo 'EOF' >> $GITHUB_OUTPUT
-
-          echo "mdBookTag=${{ steps.submodules.outputs[format('{0}--latestTag', env.mdBook)] }}" >> "$GITHUB_OUTPUT"
-          echo 'mdBookPrBody<<EOF' >> $GITHUB_OUTPUT
-          echo "${{ steps.submodules.outputs[format('{0}--prBody', env.mdBook)] }}" >> "$GITHUB_OUTPUT"
-          echo 'EOF' >> $GITHUB_OUTPUT
-
-      - name: PR for Neovim
-        uses: peter-evans/create-pull-request@v6
-        if: ${{ steps.tags.outputs.nvimTag }}
-        with:
-          add-paths: ${{ env.nvim }}
-          commit-message: "feat: update catppuccin/nvim to ${{ steps.tags.outputs.nvimTag }}"
-          branch: "feat/update-catppuccin-nvim-${{ steps.tags.outputs.nvimTag }}"
-          title: "feat: update catppuccin/nvim submodule to ${{ steps.tags.outputs.nvimTag }}"
-          body: ${{ steps.tags.outputs.nvimPrBody }}
-
-      - name: PR for mdBook
-        uses: peter-evans/create-pull-request@v6
-        if: ${{ steps.tags.outputs.mdBookTag }}
-        with:
-          add-paths: ${{ env.mdBook }}
-          commit-message: "feat: update catppuccin/mdBook to ${{ steps.tags.outputs.mdBookTag }}"
-          branch: "feat/update-catppuccin-mdBook-${{ steps.tags.outputs.mdBookTag }}"
-          title: "feat: update catppuccin/mdBook submodule to ${{ steps.tags.outputs.mdBookTag }}"
-          body: ${{ steps.tags.outputs.mdBookPrBody }}
-```
-
-</details>
 
 <!-- x-release-please-end -->
 

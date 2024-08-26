@@ -1,124 +1,129 @@
 import { exec, getExecOutput } from "@actions/exec";
 import * as core from "@actions/core";
 import * as fs from "node:fs/promises";
-import { logInfoAndDebug, toJson } from "./logging";
+import { logInfoAndDebug, toJson, toJsonPretty } from "./logging";
 import { multiplePrBody, singlePrBody } from "./markdown";
+import { z } from "zod";
+import { getCommit, getPreviousTag, getTag } from "./git";
+
+const updateStrategy = z.enum(["commit", "tag"]);
+type UpdateStrategy = z.infer<typeof updateStrategy>;
+
+export type Inputs = {
+  gitmodulesPath: string;
+  inputSubmodules: string[];
+  strategy: UpdateStrategy;
+};
 
 type GAMatrix = {
   name: string[];
-  include: SubmoduleWithLatestTag[];
+  include: Submodule[];
 };
 
 export type Submodule = {
   name: string;
   path: string;
   url: string;
+  previousShortCommitSha: string;
+  previousCommitSha: string;
   previousTag?: string;
+  latestShortCommitSha: string;
+  latestCommitSha: string;
+  latestTag?: string;
 };
 
-export type SubmoduleWithLatestTag = Submodule & {
-  latestTag: string;
+export type UpdatedSubmodule = {
+  path: string;
+  shortCommitSha: string;
+  commitSha: string;
 };
 
-type ReadFileOutput = {
-  exitCode: number;
-  err: string;
-  contents: string;
+export const parseInputs = async (): Promise<Inputs> => {
+  const gitmodulesPath = core.getInput("gitmodulesPath").trim();
+  const inputSubmodules = core.getInput("submodules").trim();
+  const strategy = await updateStrategy.parseAsync(core.getInput("strategy"));
+
+  // Github Actions doesn't support array inputs, so submodules must be separated by newlines
+  const parsedSubmodules = inputSubmodules
+    .split("\n")
+    .map((submodule) => submodule.trim().replace(/"/g, ""));
+  core.debug(`Input submodules: ${toJsonPretty(parsedSubmodules)}`);
+
+  return {
+    gitmodulesPath,
+    inputSubmodules: inputSubmodules === "" ? [] : parsedSubmodules,
+    strategy,
+  };
 };
 
-const readFile = async (path: string): Promise<ReadFileOutput> => {
-  let err = "";
-
-  try {
-    const contents = await fs.readFile(path, "utf8");
-    return { exitCode: 0, err: "", contents };
-  } catch (error) {
+const readFile = async (path: string): Promise<string> => {
+  return await fs.readFile(path, "utf8").catch((error) => {
     if (error instanceof Error) {
       if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-        err = `File not found: ${path}`;
-        return { exitCode: 1, err, contents: "" };
+        core.setFailed(`File not found: ${path}`);
+      } else {
+        core.setFailed(`Error reading file: ${error.message}`);
       }
-      err = `Error reading file: ${error.message}`;
     } else {
-      err = "An unknown error occurred while reading the file";
+      core.setFailed("An unknown error occurred while reading the file");
     }
-    return { exitCode: 1, err, contents: "" };
-  }
+    throw error;
+  });
 };
 
-export const getTag = async (path: string): Promise<string> => {
-  core.info(`Fetching tag for: ${path}`);
-  const options = { cwd: path };
-  return (
-    await getExecOutput("git describe --abbrev=0 --tags", [], options)
-  ).stdout.trim();
-};
-
-export const getPreviousTag = async (
-  path: string
-): Promise<string | undefined> => {
-  try {
-    return await getTag(path);
-  } catch (error) {
-    core.info(`'${path}': Submodule has no tags. Continuing...`);
-    return undefined;
-  }
-};
-
-export const parseGitModules = async (
+export const parseGitmodules = async (
   content: string
 ): Promise<Submodule[]> => {
   const gitmodulesRegex =
     /^\s*\[submodule\s+"([^"]+)"\]\s*\n\s*path\s*=\s*(.+)\s*\n\s*url\s*=\s*(.+)\s*$/gm;
 
-  const rawSubmodules = Array.from(content.matchAll(gitmodulesRegex)).map(
-    ([_, name, path, url]) => {
+  const parsedContent = Array.from(content.matchAll(gitmodulesRegex));
+  const detectedSubmodules: Submodule[] = await Promise.all(
+    parsedContent.map(async ([_, name, path, url]) => {
+      const [previousCommitSha, previousShortCommitSha] = await getCommit(path);
+      const previousTag = await getPreviousTag(path);
       return {
         name,
         path,
         url,
-        previousTag: "",
-      } as Submodule;
-    }
+        previousShortCommitSha,
+        previousCommitSha,
+
+        // The latest commit should be updated after the submodule is updated
+        // If you think about it, the "previous" commit is the latest commit too
+        latestShortCommitSha: previousShortCommitSha,
+        latestCommitSha: previousCommitSha,
+
+        previousTag,
+      };
+    })
   );
 
-  logInfoAndDebug("Parsed submodules", rawSubmodules);
-
-  const submodules = rawSubmodules.map(async (submodule) => {
-    const previousTag = await getPreviousTag(submodule.path);
-    return { ...submodule, previousTag } as Submodule;
-  });
-
-  return await Promise.all(submodules);
+  return detectedSubmodules;
 };
 
 export const filterSubmodules = async (
-  inputSubmodules: string,
-  detectedSubmodules: Submodule[]
+  inputSubmodules: string[],
+  detectedSubmodules: Submodule[],
+  strategy: UpdateStrategy
 ): Promise<Submodule[]> => {
-  // We only want to update the submodules that actually have an existing tag
-  const validSubmodules = detectedSubmodules.filter(
-    (submodule) => submodule.previousTag
-  );
+  let validSubmodules = detectedSubmodules;
+  if (strategy === "tag") {
+    validSubmodules = detectedSubmodules.filter(
+      (submodule) => submodule.previousTag
+    );
+  }
 
-  if (!inputSubmodules) {
+  if (inputSubmodules.length === 0) {
     return validSubmodules;
   }
 
-  // Github Actions doesn't support array inputs, so the submodules are passed as a string with each submodule in a new line
-  const parsedInputSubmodules = inputSubmodules
-    .trim()
-    .split("\n")
-    .map((submodule) => submodule.trim().replace(/"/g, ""));
-  core.debug(`Input submodules: ${toJson(parsedInputSubmodules)}`);
-
-  // We only want to update the submodules that the user has specified from the detected submodules
   return validSubmodules.filter((submodule) =>
-    parsedInputSubmodules.some((parsed) => parsed === submodule.path)
+    inputSubmodules.some((input) => input === submodule.path)
   );
 };
 
-export const updateSubmodules = async (
+export const updateToLatestCommit = async (
   filteredSubmodules: Submodule[]
 ): Promise<Submodule[]> => {
   const paths = filteredSubmodules.map((submodule) => submodule.path);
@@ -133,95 +138,125 @@ export const updateSubmodules = async (
 
   // Parse the updated submodules from the git output
   // ASSUMPTION: The first set of single quotes is the submodule path
-  const updatedSubmodules = stdout
+  // ASSUMPTION: The second set of single quotes is the commit sha
+  const updatedSubmodules: UpdatedSubmodule[] = stdout
     .trim()
     .split("\n")
-    .map((line) => line.split("'")[1]);
-  core.debug(`Submodules parsed from git output: ${toJson(updatedSubmodules)}`);
+    .map((line) => {
+      const path = line.split("'")[1];
+      const commitSha = line.split("'")[3];
+      return {
+        path,
+        commitSha,
+        shortCommitSha: commitSha.substring(0, 7),
+      };
+    });
+  core.debug(
+    `Submodules parsed from git output: ${toJsonPretty(updatedSubmodules)}`
+  );
+
+  for (const { path, shortCommitSha, commitSha } of updatedSubmodules) {
+    const submodule = filteredSubmodules.find(
+      (submodule) => submodule.path === path
+    );
+    if (submodule) {
+      submodule.latestShortCommitSha = shortCommitSha;
+      submodule.latestCommitSha = commitSha;
+    }
+  }
 
   // We only want to update the submodules that actually have new commits
   return filteredSubmodules.filter((submodule) => {
-    return updatedSubmodules.some((updated) => updated === submodule.path);
+    return updatedSubmodules.some((updated) => updated.path === submodule.path);
   });
 };
 
 export const updateToLatestTag = async (
   updatedSubmodules: Submodule[]
-): Promise<SubmoduleWithLatestTag[]> => {
+): Promise<Submodule[]> => {
   const submodulesWithTag = updatedSubmodules.map(async (submodule) => {
     const options = { cwd: submodule.path };
     const latestTag = await getTag(submodule.path);
     await exec(`git reset --hard`, [latestTag], options);
-    return { ...submodule, latestTag } as SubmoduleWithLatestTag;
+    return { ...submodule, latestTag } as Submodule;
   });
 
   return await Promise.all(submodulesWithTag);
 };
 
-const setDynamicOutputs = (
-  prefix: string,
-  submodule: SubmoduleWithLatestTag
-) => {
+export const setDynamicOutputs = (prefix: string, submodule: Submodule) => {
+  core.setOutput(`${prefix}--updated`, true);
   core.setOutput(`${prefix}--path`, submodule.path);
   core.setOutput(`${prefix}--url`, submodule.url);
-  core.setOutput(`${prefix}--previousTag`, submodule.previousTag);
-  core.setOutput(`${prefix}--latestTag`, submodule.latestTag);
+  core.setOutput(
+    `${prefix}--previousShortCommitSha`,
+    submodule.previousShortCommitSha
+  );
+  core.setOutput(`${prefix}--previousCommitSha`, submodule.previousCommitSha);
+  core.setOutput(
+    `${prefix}--latestShortCommitSha`,
+    submodule.latestShortCommitSha
+  );
+  core.setOutput(`${prefix}--latestCommitSha`, submodule.latestCommitSha);
+  core.setOutput(`${prefix}--previousTag`, submodule.previousTag ?? "");
+  core.setOutput(`${prefix}--latestTag`, submodule.latestTag ?? "");
   core.setOutput(`${prefix}--prBody`, singlePrBody(submodule));
 };
 
-const generateGAMatrix = (submodules: SubmoduleWithLatestTag[]): string => {
-  return toJson(
-    {
-      name: submodules.map((submodule) => submodule.name),
-      include: submodules,
-    } as GAMatrix,
-    0
-  );
+const toJsonMatrix = (submodules: Submodule[]): string => {
+  const matrix: GAMatrix = {
+    name: submodules.map((submodule) => submodule.name),
+    include: submodules,
+  };
+  return toJson(matrix);
 };
 
 /**
  * The main function for the action.
- * @returns {Promise<void>} Resolves when the action is complete.
  */
 export async function run(): Promise<void> {
   try {
-    const gitModulesPath = core.getInput("gitmodulesPath");
-    const inputSubmodules = core.getInput("submodules");
+    const { gitmodulesPath, inputSubmodules, strategy } = await parseInputs();
 
-    const gitModulesOutput = await readFile(gitModulesPath);
-    if (gitModulesOutput.exitCode !== 0) {
-      core.setFailed(gitModulesOutput.err);
-      return;
-    }
-    if (gitModulesOutput.contents === "") {
+    const gitmodulesContent = await readFile(gitmodulesPath);
+    if (gitmodulesContent === "") {
       core.info("No submodules detected.");
       core.info("Nothing to do. Exiting...");
       return;
     }
 
-    const detectedSubmodules = await parseGitModules(gitModulesOutput.contents);
+    const detectedSubmodules = await parseGitmodules(gitmodulesContent);
     logInfoAndDebug("Detected Submodules", detectedSubmodules);
 
-    const filteredSubmodules = await filterSubmodules(
+    const validSubmodules = await filterSubmodules(
       inputSubmodules,
-      detectedSubmodules
+      detectedSubmodules,
+      strategy
     );
-    logInfoAndDebug("Submodules to update", filteredSubmodules);
+    if (validSubmodules.length === 0) {
+      core.info("No valid submodules detected.");
+      core.info("Nothing to do. Exiting...");
+      return;
+    }
+    logInfoAndDebug("Valid submodules", validSubmodules);
 
-    const updatedSubmodules = await updateSubmodules(filteredSubmodules);
+    const updatedSubmodules = await updateToLatestCommit(validSubmodules);
     if (updatedSubmodules.length === 0) {
       core.info("All submodules have no new remote commits.");
       core.info("Nothing to do. Exiting...");
       return;
     }
-    logInfoAndDebug("Fetched remote commits for", updatedSubmodules);
+    logInfoAndDebug("Updated submodules", updatedSubmodules);
 
-    const submodulesAtLatestTag = await updateToLatestTag(updatedSubmodules);
+    let outputSubmodules = updatedSubmodules;
+    if (strategy === "tag") {
+      outputSubmodules = await updateToLatestTag(updatedSubmodules);
+    }
 
-    core.setOutput("json", toJson(submodulesAtLatestTag, 0));
-    core.setOutput("matrix", generateGAMatrix(submodulesAtLatestTag));
-    core.setOutput("prBody", multiplePrBody(submodulesAtLatestTag));
-    for (const submodule of submodulesAtLatestTag) {
+    core.setOutput("json", toJson(outputSubmodules));
+    core.setOutput("matrix", toJsonMatrix(outputSubmodules));
+    core.setOutput("prBody", multiplePrBody(outputSubmodules));
+    for (const submodule of outputSubmodules) {
       setDynamicOutputs(submodule.name, submodule);
       if (submodule.name !== submodule.path) {
         setDynamicOutputs(submodule.path, submodule);
