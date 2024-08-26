@@ -1,13 +1,18 @@
 import { Submodule } from "./main";
 import * as core from "@actions/core";
 
-export const toJson = (value: any, padding: number = 2): string =>
-  JSON.stringify(value, null, padding);
+export const toJson = (value: unknown): string => JSON.stringify(value);
 
-export const logInfoAndDebug = (message: string, submodules: Submodule[]): void => {
+export const toJsonPretty = (value: unknown): string =>
+  JSON.stringify(value, null, 2);
+
+export const logInfoAndDebug = (
+  message: string,
+  submodules: Submodule[]
+): void => {
   const submodulePaths = submodules
     .map((submodule) => submodule.path)
     .join(", ");
   core.info(`${message}: [${submodulePaths}]`);
-  core.debug(`${message}: ${toJson(submodules)}`);
+  core.debug(`${message}: ${toJsonPretty(submodules)}`);
 };

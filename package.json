@@ -1,6 +1,6 @@
 {
   "name": "update-git-submodules",
-  "description": "Update git submodule(s) to their latest tag",
+  "description": "Update git submodule(s) to their latest commit or tag",
   "version": "1.0.0",
   "author": "Goudham <sgoudham@gmail.com>",
   "private": true,
@@ -35,7 +35,8 @@
   "license": "MIT",
   "dependencies": {
     "@actions/core": "^1.10.1",
-    "@actions/exec": "^1.1.1"
+    "@actions/exec": "^1.1.1",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "@tsconfig/recommended": "^1.0.7",

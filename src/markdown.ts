@@ -1,4 +1,4 @@
-import { SubmoduleWithLatestTag } from "./main";
+import { Submodule } from "./main";
 
 const header = () => "This PR updates the following submodules:";
 
@@ -8,27 +8,31 @@ const footer = () =>
 const tableHeader = () =>
   "| **Submodule Name** | **Submodule Path** | **Change** |\n| --- | --- | --- |";
 
-const tableRow = (submodule: SubmoduleWithLatestTag) => {
+const tableRow = (submodule: Submodule) => {
   const name = `[${submodule.name}](${submodule.url})`;
   const cleanUrl = submodule.url.replace(".git", "");
-  const changeTagDisplay = `${submodule.previousTag}...${submodule.latestTag}`;
-  const changeUrl = `[${changeTagDisplay}](${cleanUrl}/compare/${changeTagDisplay})`;
+  let changeDisplay = `${submodule.previousShortCommitSha}...${submodule.latestShortCommitSha}`;
+  let changeUrl = `[${changeDisplay}](${cleanUrl}/compare/${submodule.previousCommitSha}...${submodule.latestCommitSha})`;
+  if (submodule.latestTag) {
+    changeDisplay = `${submodule.previousTag}...${submodule.latestTag}`;
+    changeUrl = `[${changeDisplay}](${cleanUrl}/compare/${changeDisplay})`;
+  }
   return `| ${name} | ${submodule.path} | ${changeUrl} |`;
 };
 
-const singleTable = (submodule: SubmoduleWithLatestTag) => {
+const singleTable = (submodule: Submodule) => {
   return `${tableHeader()}\n${tableRow(submodule)}`;
 };
 
-const multipleTable = (submodules: SubmoduleWithLatestTag[]) => {
+const multipleTable = (submodules: Submodule[]) => {
   const body = submodules.map((submodule) => tableRow(submodule)).join("\n");
   return `${tableHeader()}\n${body}`;
 };
 
-export const singlePrBody = (submodule: SubmoduleWithLatestTag) => {
+export const singlePrBody = (submodule: Submodule) => {
   return `${header()}\n${singleTable(submodule)}\n${footer()}`;
 };
 
-export const multiplePrBody = (submodules: SubmoduleWithLatestTag[]) => {
+export const multiplePrBody = (submodules: Submodule[]) => {
   return `${header()}\n${multipleTable(submodules)}\n${footer()}`;
 };
