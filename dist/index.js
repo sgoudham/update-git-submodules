@@ -30832,6 +30832,11 @@ function run() {
             const detectedSubmodules = yield (0, exports.parseGitmodules)(gitmodulesContent);
             (0, logging_1.logInfoAndDebug)("Detected Submodules", detectedSubmodules);
             const validSubmodules = yield (0, exports.filterSubmodules)(inputSubmodules, detectedSubmodules, strategy);
+            if (validSubmodules.length === 0) {
+                core.info("No valid submodules detected.");
+                core.info("Nothing to do. Exiting...");
+                return;
+            }
             (0, logging_1.logInfoAndDebug)("Valid submodules", validSubmodules);
             const updatedSubmodules = yield (0, exports.updateToLatestCommit)(validSubmodules);
             if (updatedSubmodules.length === 0) {

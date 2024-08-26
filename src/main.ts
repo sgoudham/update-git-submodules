@@ -233,6 +233,11 @@ export async function run(): Promise<void> {
       detectedSubmodules,
       strategy
     );
+    if (validSubmodules.length === 0) {
+      core.info("No valid submodules detected.");
+      core.info("Nothing to do. Exiting...");
+      return;
+    }
     logInfoAndDebug("Valid submodules", validSubmodules);
 
     const updatedSubmodules = await updateToLatestCommit(validSubmodules);
