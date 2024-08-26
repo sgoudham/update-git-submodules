@@ -105,7 +105,7 @@ the path is `ports/vscode-icons`, the dynamic outputs will be:
 ```yaml
 - name: Update Submodules
   id: submodules
-  uses: "sgoudham/update-git-submodules@v1.0.0"
+  uses: sgoudham/update-git-submodules@v1.0.0
 ```
 
 ### Update all submodules to the latest tag
@@ -113,7 +113,7 @@ the path is `ports/vscode-icons`, the dynamic outputs will be:
 ```yaml
 - name: Update Submodules
   id: submodules
-  uses: "sgoudham/update-git-submodules@v1.0.0"
+  uses: sgoudham/update-git-submodules@v1.0.0
   with:
     strategy: "tag"
 ```
@@ -123,7 +123,7 @@ the path is `ports/vscode-icons`, the dynamic outputs will be:
 ```yaml
 - name: Update Submodule
   id: submodules
-  uses: "sgoudham/update-git-submodules@v1.0.0"
+  uses: sgoudham/update-git-submodules@v1.0.0
   with:
     submodules: ports/vscode-icons
 ```
@@ -146,7 +146,7 @@ steps:
 
   - name: Update Submodules
     id: submodules
-    uses: "sgoudham/update-git-submodules@v1.0.0"
+    uses: sgoudham/update-git-submodules@v1.0.0
 
   - name: Create PR
     uses: peter-evans/create-pull-request@v6
@@ -170,7 +170,7 @@ steps:
 
   - name: Update Submodules
     id: submodules
-    uses: "sgoudham/update-git-submodules@v1.0.0"
+    uses: sgoudham/update-git-submodules@v1.0.0
 
   - name: Create PR
     uses: peter-evans/create-pull-request@v6
@@ -183,20 +183,6 @@ steps:
 
 ### Update multiple submodules and create multiple pull requests
 
-`.gitmodules`
-
-```ini
-[submodule "ports/nvim"]
-	path = ports/nvim
-	url = https://github.com/catppuccin/nvim.git
-[submodule "ports/mdBook"]
-	path = ports/mdBook
-	url = https://github.com/catppuccin/mdBook.git
-[submodule "ports/vscode-icons"]
-	path = ports/vscode-icons
-	url = https://github.com/catppuccin/vscode-icons.git
-```
-
 `workflow.yml`
 
 ```yaml
@@ -205,7 +191,17 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        submodule: [ports/nvim, ports/mdBook]
+        submodule: [ports/nvim, ports/mdBook, ports/vscode-icons]
+        include:
+          - submodule: ports/nvim # Update to the latest tag
+            strategy: "tag"
+            latest: "latestTag"
+          - submodule: ports/mdBook # Update to the latest commit
+            strategy: "commit"
+            latest: "latestShortCommitSha"
+          - submodule: ports/vscode-icons # Update to the latest commit
+            strategy: "commit"
+            latest: "latestShortCommitSha"
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -215,81 +211,20 @@ jobs:
 
       - name: Update Submodules
         id: submodules
-        uses: "sgoudham/update-git-submodules@v1.0.0"
+        uses: sgoudham/update-git-submodules@v1.0.0
         with:
           submodules: ${{ matrix.submodule }}
+          strategy: ${{ matrix.strategy }}
 
       - name: Create PR
         uses: peter-evans/create-pull-request@v6
-        if: ${{ steps.submodules.outputs[format('{0}--latestTag', matrix.submodule)] }}
+        if: ${{ steps.submodules.outputs[format('{0}--updated', matrix.submodule)] }}
         with:
-          commit-message: "feat: update ${{ matrix.submodule }} to ${{ steps.submodules.outputs[format('{0}--latestTag', matrix.submodule)] }}"
-          branch: "feat/update-${{ matrix.submodule }}-${{ steps.submodules.outputs[format('{0}--latestTag', matrix.submodule)] }}"
-          title: "feat: update ${{ matrix.submodule }} submodule to ${{ steps.submodules.outputs[format('{0}--latestTag', matrix.submodule)] }}"
+          commit-message: "feat: update ${{ matrix.submodule }} to ${{ steps.submodules.outputs[format('{0}--{1}', matrix.submodule, matrix.latest)] }}"
+          branch: "feat/update-${{ matrix.submodule }}-${{ steps.submodules.outputs[format('{0}--{1}', matrix.submodule, matrix.latest)] }}"
+          title: "feat: update ${{ matrix.submodule }} submodule to ${{ steps.submodules.outputs[format('{0}--{1}', matrix.submodule, matrix.latest)] }}"
           body: ${{ steps.submodules.outputs.prBody }}
 ```
-
-<details>
-<summary>Drop me down to view a version where multiple pull requests are created in the same job (not recommended!)</summary>
-
-```yaml
-jobs:
-  update-submodules:
-    runs-on: ubuntu-latest
-    env:
-      nvim: "ports/nvim"
-      mdBook: "ports/mdBook"
-
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-        with:
-          submodules: "recursive"
-          fetch-depth: 0
-
-      - name: Update Submodules
-        id: submodules
-        uses: "sgoudham/update-git-submodules@v1.0.0"
-        with:
-          submodules: |
-            ${{ env.nvim }}
-            ${{ env.mdBook }}
-
-      - name: Parse Submodule Outputs
-        id: tags
-        run: |
-          echo "nvimTag=${{ steps.submodules.outputs[format('{0}--latestTag', env.nvim)] }}" >> "$GITHUB_OUTPUT"
-          echo 'nvimPrBody<<EOF' >> $GITHUB_OUTPUT
-          echo "${{ steps.submodules.outputs[format('{0}--prBody', env.nvim)] }}" >> "$GITHUB_OUTPUT"
-          echo 'EOF' >> $GITHUB_OUTPUT
-
-          echo "mdBookTag=${{ steps.submodules.outputs[format('{0}--latestTag', env.mdBook)] }}" >> "$GITHUB_OUTPUT"
-          echo 'mdBookPrBody<<EOF' >> $GITHUB_OUTPUT
-          echo "${{ steps.submodules.outputs[format('{0}--prBody', env.mdBook)] }}" >> "$GITHUB_OUTPUT"
-          echo 'EOF' >> $GITHUB_OUTPUT
-
-      - name: PR for Neovim
-        uses: peter-evans/create-pull-request@v6
-        if: ${{ steps.tags.outputs.nvimTag }}
-        with:
-          add-paths: ${{ env.nvim }}
-          commit-message: "feat: update catppuccin/nvim to ${{ steps.tags.outputs.nvimTag }}"
-          branch: "feat/update-catppuccin-nvim-${{ steps.tags.outputs.nvimTag }}"
-          title: "feat: update catppuccin/nvim submodule to ${{ steps.tags.outputs.nvimTag }}"
-          body: ${{ steps.tags.outputs.nvimPrBody }}
-
-      - name: PR for mdBook
-        uses: peter-evans/create-pull-request@v6
-        if: ${{ steps.tags.outputs.mdBookTag }}
-        with:
-          add-paths: ${{ env.mdBook }}
-          commit-message: "feat: update catppuccin/mdBook to ${{ steps.tags.outputs.mdBookTag }}"
-          branch: "feat/update-catppuccin-mdBook-${{ steps.tags.outputs.mdBookTag }}"
-          title: "feat: update catppuccin/mdBook submodule to ${{ steps.tags.outputs.mdBookTag }}"
-          body: ${{ steps.tags.outputs.mdBookPrBody }}
-```
-
-</details>
 
 <!-- x-release-please-end -->
 
