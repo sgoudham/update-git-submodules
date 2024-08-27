@@ -5,19 +5,23 @@ import { logInfoAndDebug, toJson, toJsonPretty } from "./logging";
 import { multiplePrBody, singlePrBody } from "./markdown";
 import { z } from "zod";
 import { getCommit, getPreviousTag, getTag } from "./git";
+import { parse } from "ini";
 
 const updateStrategy = z.enum(["commit", "tag"]);
 type UpdateStrategy = z.infer<typeof updateStrategy>;
+
+const gitmodulesSchema = z.record(
+  z.string(),
+  z.object({
+    path: z.string(),
+    url: z.string().url(),
+  })
+);
 
 export type Inputs = {
   gitmodulesPath: string;
   inputSubmodules: string[];
   strategy: UpdateStrategy;
-};
-
-type GAMatrix = {
-  name: string[];
-  include: Submodule[];
 };
 
 export type Submodule = {
@@ -38,10 +42,17 @@ export type UpdatedSubmodule = {
   commitSha: string;
 };
 
+type GAMatrix = {
+  name: string[];
+  include: Submodule[];
+};
+
 export const parseInputs = async (): Promise<Inputs> => {
   const gitmodulesPath = core.getInput("gitmodulesPath").trim();
   const inputSubmodules = core.getInput("submodules").trim();
-  const strategy = await updateStrategy.parseAsync(core.getInput("strategy"));
+  const strategy = await updateStrategy.parseAsync(
+    core.getInput("strategy").trim()
+  );
 
   // Github Actions doesn't support array inputs, so submodules must be separated by newlines
   const parsedSubmodules = inputSubmodules
@@ -56,7 +67,7 @@ export const parseInputs = async (): Promise<Inputs> => {
   };
 };
 
-const readFile = async (path: string): Promise<string> => {
+export const readFile = async (path: string): Promise<string> => {
   return await fs.readFile(path, "utf8").catch((error) => {
     if (error instanceof Error) {
       if ((error as NodeJS.ErrnoException).code === "ENOENT") {
@@ -74,14 +85,16 @@ const readFile = async (path: string): Promise<string> => {
 export const parseGitmodules = async (
   content: string
 ): Promise<Submodule[]> => {
-  const gitmodulesRegex =
-    /^\s*\[submodule\s+"([^"]+)"\]\s*\n\s*path\s*=\s*(.+)\s*\n\s*url\s*=\s*(.+)\s*$/gm;
-
-  const parsedContent = Array.from(content.matchAll(gitmodulesRegex));
-  const detectedSubmodules: Submodule[] = await Promise.all(
-    parsedContent.map(async ([_, name, path, url]) => {
+  const parsed = parse(content);
+  const gitmodules = await gitmodulesSchema.parseAsync(parsed);
+  return await Promise.all(
+    Object.entries(gitmodules).map(async ([key, values]) => {
+      const name = key.split('"')[1].trim();
+      const path = values.path.replace(/"/g, "").trim();
+      const url = values.url.replace(/"/g, "").trim();
       const [previousCommitSha, previousShortCommitSha] = await getCommit(path);
       const previousTag = await getPreviousTag(path);
+
       return {
         name,
         path,
@@ -98,8 +111,6 @@ export const parseGitmodules = async (
       };
     })
   );
-
-  return detectedSubmodules;
 };
 
 export const filterSubmodules = async (

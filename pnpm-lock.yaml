@@ -14,6 +14,9 @@ importers:
       '@actions/exec':
         specifier: ^1.1.1
         version: 1.1.1
+      ini:
+        specifier: ^4.1.3
+        version: 4.1.3
       zod:
         specifier: ^3.23.8
         version: 3.23.8
@@ -21,6 +24,9 @@ importers:
       '@tsconfig/recommended':
         specifier: ^1.0.7
         version: 1.0.7
+      '@types/ini':
+        specifier: ^4.1.1
+        version: 4.1.1
       '@types/node':
         specifier: ^22.2.0
         version: 22.5.0
@@ -333,6 +339,9 @@ packages:
   '@types/estree@1.0.5':
     resolution: {integrity: sha512-/kYRxGDLWzHOB7q+wtSUQlFrtcdUccpfy+X+9iMBpHK8QLLhx2wIPYuS5DYtR9Wa/YlZAbIovy7qVdB1Aq6Lyw==}
 
+  '@types/ini@4.1.1':
+    resolution: {integrity: sha512-MIyNUZipBTbyUNnhvuXJTY7B6qNI78meck9Jbv3wk0OgNwRyOOVEKDutAkOs1snB/tx0FafyR6/SN4Ps0hZPeg==}
+
   '@types/node@22.5.0':
     resolution: {integrity: sha512-DkFrJOe+rfdHTqqMg0bSNlGlQ85hSoh2TPzZyhHsXnMtligRWpxUySiyw8FY14ITt24HVCiQPWxS3KO/QlGmWg==}
 
@@ -476,6 +485,10 @@ packages:
   human-signals@5.0.0:
     resolution: {integrity: sha512-AXcZb6vzzrFAUE61HnN4mpLqd/cSIwNQjtNWR0euPm6y0iqx3G4gOXaIDdtdDwZmhwe82LA6+zinmW4UBWVePQ==}
     engines: {node: '>=16.17.0'}
+
+  ini@4.1.3:
+    resolution: {integrity: sha512-X7rqawQBvfdjS10YU1y1YVreA3SsLrW9dX2CewP2EbBJM4ypVNLDkO5y04gejPwKIY9lR+7r9gn3rFPt/kmWFg==}
+    engines: {node: ^14.17.0 || ^16.13.0 || >=18.0.0}
 
   is-fullwidth-code-point@3.0.0:
     resolution: {integrity: sha512-zymm5+u+sCsSWyD9qNaejV3DFvhCKclKdizYaJUuHA83RLjb7nSuGnddCHGv0hk+KY7BMAlsWeK4Ueg6EV6XQg==}
@@ -960,6 +973,8 @@ snapshots:
 
   '@types/estree@1.0.5': {}
 
+  '@types/ini@4.1.1': {}
+
   '@types/node@22.5.0':
     dependencies:
       undici-types: 6.19.8
@@ -1139,6 +1154,8 @@ snapshots:
   html-escaper@2.0.2: {}
 
   human-signals@5.0.0: {}
+
+  ini@4.1.3: {}
 
   is-fullwidth-code-point@3.0.0: {}
 

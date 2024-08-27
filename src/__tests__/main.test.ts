@@ -4,6 +4,7 @@ import {
   Inputs,
   parseGitmodules,
   parseInputs,
+  readFile,
   setDynamicOutputs,
   Submodule,
   updateToLatestCommit,
@@ -62,26 +63,21 @@ test("parse GitHub Action inputs with no input submodules", async () => {
 });
 
 test("extract single submodule from .gitmodules", async () => {
-  const input = `
-  [submodule "ports/mdBook"]
-  	path = ports/mdBook
-  	url = https://github.com/catppuccin/mdBook.git
-  `;
-  const submodule = mdBookSubmodule();
-  const expected = [submodule];
+  const input = await readFile("src/__tests__/fixtures/single-gitmodules.ini");
+  const expected = [mdBookSubmodule()];
 
   vi.mocked(getExecOutput)
     .mockReturnValueOnce(
       Promise.resolve({
         exitCode: 0,
-        stdout: `\n${submodule.previousCommitSha}`,
+        stdout: `\n${expected[0].previousCommitSha}`,
         stderr: "",
       })
     )
     .mockReturnValueOnce(
       Promise.resolve({
         exitCode: 0,
-        stdout: `\n${submodule.previousTag}`,
+        stdout: `\n${expected[0].previousTag}`,
         stderr: "",
       })
     );
@@ -91,20 +87,15 @@ test("extract single submodule from .gitmodules", async () => {
 });
 
 test("extract single submodule from .gitmodules that has no tags", async () => {
-  const input = `
-  [submodule "ports/mdBook"]
-  	path = ports/mdBook
-  	url = https://github.com/catppuccin/mdBook.git
-  `;
-  const submodule = mdBookSubmodule();
-  submodule.previousTag = undefined;
-  const expected = [submodule];
+  const input = await readFile("src/__tests__/fixtures/single-gitmodules.ini");
+  const expected = [mdBookSubmodule()];
+  expected[0].previousTag = undefined;
 
   vi.mocked(getExecOutput)
     .mockReturnValueOnce(
       Promise.resolve({
         exitCode: 0,
-        stdout: `\n${submodule.previousCommitSha}`,
+        stdout: `\n${expected[0].previousCommitSha}`,
         stderr: "",
       })
     )
@@ -115,17 +106,9 @@ test("extract single submodule from .gitmodules that has no tags", async () => {
 });
 
 test("extract multiple git submodules from .gitmodules", async () => {
-  const input = `
-  [submodule "ports/nvim"]
-  	path = ports/nvim
-  	url = https://github.com/catppuccin/nvim.git
-  [submodule "ports/mdBook"]
-  	path = ports/mdBook
-  	url = https://github.com/catppuccin/mdBook.git
-  [submodule "ports/vscode-icons"]
-  	path = ports/vscode-icons
-  	url = https://github.com/catppuccin/vscode-icons.git
-  `;
+  const input = await readFile(
+    "src/__tests__/fixtures/multiple-gitmodules.ini"
+  );
   const [nvim, mdBook, vscodeIcons] = [
     nvimSubmodule(),
     mdBookSubmodule(),
