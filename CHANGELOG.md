@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.0.1](https://github.com/sgoudham/update-git-submodules/compare/v2.0.0...v2.0.1) (2024-08-27)
+
+
+### Bug Fixes
+
+* remove naive regex parsing of `.gitmodules` file ([#15](https://github.com/sgoudham/update-git-submodules/issues/15)) ([65e3681](https://github.com/sgoudham/update-git-submodules/commit/65e3681e1ed1d96ec1379d60d71499285f08579c))
+
 ## [2.0.0](https://github.com/sgoudham/update-git-submodules/compare/v1.0.0...v2.0.0) (2024-08-26)
 
 
