@@ -24,7 +24,7 @@ their submodules to the latest git tag instead of the latest commit.
 <!-- x-release-please-start-version -->
 
 ```yaml
-- uses: sgoudham/update-git-submodules@v2.0.0
+- uses: sgoudham/update-git-submodules@v2.0.1
   with:
     # The path to the '.gitmodules' file.
     #
@@ -105,7 +105,7 @@ the path is `ports/vscode-icons`, the dynamic outputs will be:
 ```yaml
 - name: Update Submodules
   id: submodules
-  uses: sgoudham/update-git-submodules@v2.0.0
+  uses: sgoudham/update-git-submodules@v2.0.1
 ```
 
 ### Update all submodules to the latest tag
@@ -113,7 +113,7 @@ the path is `ports/vscode-icons`, the dynamic outputs will be:
 ```yaml
 - name: Update Submodules
   id: submodules
-  uses: sgoudham/update-git-submodules@v2.0.0
+  uses: sgoudham/update-git-submodules@v2.0.1
   with:
     strategy: tag
 ```
@@ -123,7 +123,7 @@ the path is `ports/vscode-icons`, the dynamic outputs will be:
 ```yaml
 - name: Update Submodule
   id: submodules
-  uses: sgoudham/update-git-submodules@v2.0.0
+  uses: sgoudham/update-git-submodules@v2.0.1
   with:
     submodules: ports/vscode-icons
 ```
@@ -133,7 +133,7 @@ the path is `ports/vscode-icons`, the dynamic outputs will be:
 ```yaml
 - name: Update Submodules
   id: submodules
-  uses: sgoudham/update-git-submodules@v2.0.0
+  uses: sgoudham/update-git-submodules@v2.0.1
   with:
     submodules: |
       ports/nvim
@@ -155,7 +155,7 @@ steps:
 
   - name: Update Submodules
     id: submodules
-    uses: sgoudham/update-git-submodules@v2.0.0
+    uses: sgoudham/update-git-submodules@v2.0.1
 
   - name: Create PR
     uses: peter-evans/create-pull-request@v6
@@ -179,7 +179,7 @@ steps:
 
   - name: Update Submodules
     id: submodules
-    uses: sgoudham/update-git-submodules@v2.0.0
+    uses: sgoudham/update-git-submodules@v2.0.1
 
   - name: Create PR
     uses: peter-evans/create-pull-request@v6
@@ -218,7 +218,7 @@ jobs:
 
       - name: Update Submodules
         id: submodules
-        uses: sgoudham/update-git-submodules@v2.0.0
+        uses: sgoudham/update-git-submodules@v2.0.1
         with:
           submodules: ${{ matrix.submodule }}
           strategy: ${{ matrix.strategy }}
