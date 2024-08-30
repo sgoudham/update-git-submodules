@@ -13,14 +13,17 @@ const tableRow = (submodule: Submodule) => {
   const cleanUrl = submodule.url.replace(".git", "");
   let changeDisplay = `${submodule.previousShortCommitSha}...${submodule.latestShortCommitSha}`;
   let changeUrl = `[${changeDisplay}](${cleanUrl}/compare/${submodule.previousCommitSha}...${submodule.latestCommitSha})`;
+
   if (submodule.latestTag) {
     if (submodule.previousCommitShaHasTag) {
       changeDisplay = `${submodule.previousTag}...${submodule.latestTag}`;
+      changeUrl = `[${changeDisplay}](${cleanUrl}/compare/${changeDisplay})`;
     } else {
       changeDisplay = `${submodule.previousShortCommitSha}...${submodule.latestTag}`;
+      changeUrl = `[${changeDisplay}](${cleanUrl}/compare/${submodule.previousCommitSha}...${submodule.latestTag})`;
     }
-    changeUrl = `[${changeDisplay}](${cleanUrl}/compare/${changeDisplay})`;
   }
+
   return `| ${name} | ${submodule.path} | ${changeUrl} |`;
 };
 

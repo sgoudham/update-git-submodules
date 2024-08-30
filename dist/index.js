@@ -31195,11 +31195,12 @@ const tableRow = (submodule) => {
     if (submodule.latestTag) {
         if (submodule.previousCommitShaHasTag) {
             changeDisplay = `${submodule.previousTag}...${submodule.latestTag}`;
+            changeUrl = `[${changeDisplay}](${cleanUrl}/compare/${changeDisplay})`;
         }
         else {
             changeDisplay = `${submodule.previousShortCommitSha}...${submodule.latestTag}`;
+            changeUrl = `[${changeDisplay}](${cleanUrl}/compare/${submodule.previousCommitSha}...${submodule.latestTag})`;
         }
-        changeUrl = `[${changeDisplay}](${cleanUrl}/compare/${changeDisplay})`;
     }
     return `| ${name} | ${submodule.path} | ${changeUrl} |`;
 };
