@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.1.1](https://github.com/sgoudham/update-git-submodules/compare/v2.1.0...v2.1.1) (2024-08-30)
+
+
+### Bug Fixes
+
+* always use long commit sha in links ([#24](https://github.com/sgoudham/update-git-submodules/issues/24)) ([9f65778](https://github.com/sgoudham/update-git-submodules/commit/9f657782f4aebe538594d1f5e1841f6f58d68181))
+* don't assume submodule is on previous tag when strategy "tag" ([#22](https://github.com/sgoudham/update-git-submodules/issues/22)) ([1050274](https://github.com/sgoudham/update-git-submodules/commit/1050274697869e57cbab6d3f8a74a694a9f4a676))
+* mention only the PR description is generated ([#25](https://github.com/sgoudham/update-git-submodules/issues/25)) ([2bf3ddb](https://github.com/sgoudham/update-git-submodules/commit/2bf3ddbebaca133e28d072c9dad8532daeac242e))
+
 ## [2.1.0](https://github.com/sgoudham/update-git-submodules/compare/v2.0.1...v2.1.0) (2024-08-30)
 
 
