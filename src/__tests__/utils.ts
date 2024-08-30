@@ -17,6 +17,7 @@ class SubmoduleBuilder {
       !this.submodule.remoteName ||
       !this.submodule.previousShortCommitSha ||
       !this.submodule.previousCommitSha ||
+      !this.submodule.previousCommitShaHasTag ||
       !this.submodule.latestShortCommitSha ||
       !this.submodule.latestCommitSha
     ) {
@@ -33,6 +34,7 @@ export const mdBookSubmodule = (
   remoteName: string = "catppuccin/mdBook",
   previousShortCommitSha: string = "a19a19b",
   previousCommitSha: string = "a19a19bd14f26c3bba311bbffc5a74710add5ac2",
+  previousCommitShaHasTag: boolean = true,
   previousTag: string = "v0.1.2",
   latestShortCommitSha: string = "a19a19b",
   latestCommitSha: string = "a19a19bd14f26c3bba311bbffc5a74710add5ac2"
@@ -44,6 +46,7 @@ export const mdBookSubmodule = (
     remoteName,
     previousShortCommitSha,
     previousCommitSha,
+    previousCommitShaHasTag,
     previousTag,
     latestShortCommitSha,
     latestCommitSha,
@@ -57,6 +60,7 @@ export const vscodeIconsSubmodule = (
   remoteName: string = "catppuccin/vscode-icons",
   previousShortCommitSha: string = "71d98b8",
   previousCommitSha: string = "71d98b81bfdb6b8d3527037c3017eb07e6ec0621",
+  previousCommitShaHasTag: boolean = true,
   previousTag: string = "v1.14.0",
   latestShortCommitSha: string = "71d98b8",
   latestCommitSha: string = "71d98b81bfdb6b8d3527037c3017eb07e6ec0621"
@@ -68,6 +72,7 @@ export const vscodeIconsSubmodule = (
     remoteName,
     previousShortCommitSha,
     previousCommitSha,
+    previousCommitShaHasTag,
     previousTag,
     latestShortCommitSha,
     latestCommitSha,
@@ -81,6 +86,7 @@ export const nvimSubmodule = (
   remoteName: string = "catppuccin/nvim",
   previousShortCommitSha: string = "774a4ed",
   previousCommitSha: string = "774a4ed9a69d0a2633da60f73aa63a8e23aacced",
+  previousCommitShaHasTag: boolean = true,
   previousTag: string = "v1.8.0",
   latestShortCommitSha: string = "774a4ed",
   latestCommitSha: string = "774a4ed9a69d0a2633da60f73aa63a8e23aacced"
@@ -92,6 +98,7 @@ export const nvimSubmodule = (
     remoteName,
     previousShortCommitSha,
     previousCommitSha,
+    previousCommitShaHasTag,
     previousTag,
     latestShortCommitSha,
     latestCommitSha,

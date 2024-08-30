@@ -1,6 +1,6 @@
 import { expect, test, vi } from "vitest";
 import { getExecOutput } from "@actions/exec";
-import { getCommit, getPreviousTag, getTag } from "../git";
+import { getCommit, getPreviousTag, getTag, hasTag } from "../git";
 
 vi.mock("@actions/exec", async () => {
   return {
@@ -63,4 +63,34 @@ test("fail to get previous tag and continue", async () => {
   vi.mocked(getExecOutput).mockRejectedValue(new Error());
   const previousTag = await getPreviousTag(input);
   expect(previousTag).toEqual(undefined);
+});
+
+test("previous commit has a tag pointing to it", async () => {
+  const input = "a19a19bd14f26c3bba311bbffc5a74710add5ac2";
+
+  vi.mocked(getExecOutput).mockReturnValueOnce(
+    Promise.resolve({
+      exitCode: 0,
+      stdout: "v1.0.0\n",
+      stderr: "",
+    })
+  );
+
+  const previousCommitHasTag = await hasTag("", input);
+  expect(previousCommitHasTag).true;
+});
+
+test("previous commit has no tag and continue", async () => {
+  const input = "a19a19bd14f26c3bba311bbffc5a74710add5ac2";
+
+  vi.mocked(getExecOutput).mockReturnValueOnce(
+    Promise.resolve({
+      exitCode: 0,
+      stdout: "\n\n",
+      stderr: "",
+    })
+  );
+
+  const previousCommitHasTag = await hasTag("", input);
+  expect(previousCommitHasTag).false;
 });

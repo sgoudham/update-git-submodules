@@ -4,7 +4,7 @@ import * as fs from "node:fs/promises";
 import { logInfoAndDebug, toJson, toJsonPretty } from "./logging";
 import { multiplePrBody, singlePrBody } from "./markdown";
 import { z } from "zod";
-import { getCommit, getPreviousTag, getTag } from "./git";
+import { getCommit, getPreviousTag, getTag, hasTag } from "./git";
 import { parse } from "ini";
 
 const updateStrategy = z.enum(["commit", "tag"]);
@@ -31,6 +31,7 @@ export type Submodule = {
   remoteName: string;
   previousShortCommitSha: string;
   previousCommitSha: string;
+  previousCommitShaHasTag: boolean;
   previousTag?: string;
   latestShortCommitSha: string;
   latestCommitSha: string;
@@ -96,6 +97,7 @@ export const parseGitmodules = async (
       const urlParts = url.replace(".git", "").split("/");
       const remoteName = `${urlParts[3]}/${urlParts[4]}`;
       const [previousCommitSha, previousShortCommitSha] = await getCommit(path);
+      const previousCommitShaHasTag = await hasTag(path, previousCommitSha);
       const previousTag = await getPreviousTag(path);
 
       return {
@@ -105,13 +107,13 @@ export const parseGitmodules = async (
         remoteName,
         previousShortCommitSha,
         previousCommitSha,
+        previousCommitShaHasTag,
+        previousTag,
 
         // The latest commit should be updated after the submodule is updated
         // If you think about it, the "previous" commit is the latest commit too
         latestShortCommitSha: previousShortCommitSha,
         latestCommitSha: previousCommitSha,
-
-        previousTag,
       };
     })
   );

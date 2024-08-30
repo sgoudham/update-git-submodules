@@ -77,7 +77,7 @@ variables for each submodule that was updated:
   after it was updated.
 - `${prefix}--latestCommitSha`: The commit SHA of the submodule after it was
   updated.
-- `${prefix}--previousTag`: The tag of the submodule before it was updated. **May not exist if the submodule does not have any tags.**
+- `${prefix}--previousTag`: The latest tag of the submodule before it was updated. **May not exist if the submodule does not have any tags.**
 - `${prefix}--latestTag`: The tag that the submodule was updated to. **Only available when the strategy is set to 'tag'.**
 - `${prefix}--prBody`: A multi-line Markdown string intended for use in a pull request body.
 
