@@ -5,9 +5,10 @@
 </h1>
 
 This GitHub Action updates one or more git submodules in a repository to the
-latest commit or tag. The primary use case for this action is to be used across
-[Catppuccin](https://github.com/catppuccin), allowing repositories to update
-their submodules to the latest git tag instead of the latest commit.
+latest commit or tag. The primary motivation behind creating this action was for
+it be used across [Catppuccin](https://github.com/catppuccin), allowing
+repositories to update their submodules to the latest git tag instead of the
+latest commit.
 
 > [!NOTE]  
 > This action assumes that all git submodules are located in a separate GitHub
