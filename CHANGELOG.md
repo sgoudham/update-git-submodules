@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.1.0](https://github.com/sgoudham/update-git-submodules/compare/v2.0.1...v2.1.0) (2024-08-30)
+
+
+### Features
+
+* add output `remoteName` & use it in `prBody` ([d598328](https://github.com/sgoudham/update-git-submodules/commit/d598328ef2f251724d0746fa69a185f582e2c945))
+
 ## [2.0.1](https://github.com/sgoudham/update-git-submodules/compare/v2.0.0...v2.0.1) (2024-08-27)
 
 
