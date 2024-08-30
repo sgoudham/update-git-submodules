@@ -28,6 +28,7 @@ export type Submodule = {
   name: string;
   path: string;
   url: string;
+  remoteName: string;
   previousShortCommitSha: string;
   previousCommitSha: string;
   previousTag?: string;
@@ -92,6 +93,8 @@ export const parseGitmodules = async (
       const name = key.split('"')[1].trim();
       const path = values.path.replace(/"/g, "").trim();
       const url = values.url.replace(/"/g, "").trim();
+      const urlParts = url.replace(".git", "").split("/");
+      const remoteName = `${urlParts[3]}/${urlParts[4]}`;
       const [previousCommitSha, previousShortCommitSha] = await getCommit(path);
       const previousTag = await getPreviousTag(path);
 
@@ -99,6 +102,7 @@ export const parseGitmodules = async (
         name,
         path,
         url,
+        remoteName,
         previousShortCommitSha,
         previousCommitSha,
 
@@ -199,6 +203,7 @@ export const setDynamicOutputs = (prefix: string, submodule: Submodule) => {
   core.setOutput(`${prefix}--updated`, true);
   core.setOutput(`${prefix}--path`, submodule.path);
   core.setOutput(`${prefix}--url`, submodule.url);
+  core.setOutput(`${prefix}--url`, submodule.remoteName);
   core.setOutput(
     `${prefix}--previousShortCommitSha`,
     submodule.previousShortCommitSha

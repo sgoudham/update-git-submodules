@@ -8,6 +8,12 @@ latest commit or tag. The primary use case for this action is to be used across
 [Catppuccin](https://github.com/catppuccin), allowing repositories to update
 their submodules to the latest git tag instead of the latest commit.
 
+> [!NOTE]  
+> This action assumes that all git submodules are located in a separate GitHub
+> repository, please raise an
+> [issue](https://github.com/sgoudham/update-git-submodules/issues/new) if you'd
+> like to see other platforms supported.
+
 ### What it does
 
 - It automatically parses the `.gitmodules` file to find submodules.
@@ -61,6 +67,8 @@ variables for each submodule that was updated:
 - `${prefix}--updated`: Always set to `true` to indicate that the submodule was updated.
 - `${prefix}--path`: The path to the submodule that was updated.
 - `${prefix}--url`: The GitHub URL of the submodule that was updated.
+- `${prefix}--remoteName`: The name of the remote repository of the submodule
+  that was updated. (e.g. `sgoudham/update-git-submodules`)
 - `${prefix}--previousShortCommitSha`: The short commit SHA of the submodule
   before it was updated.
 - `${prefix}--previousCommitSha`: The commit SHA of the submodule before it
@@ -80,6 +88,7 @@ the path is `ports/vscode-icons`, the dynamic outputs will be:
 - `vscode-icons--updated`
 - `vscode-icons--path`
 - `vscode-icons--url`
+- `vscode-icons--remoteName`
 - `vscode-icons--previousShortCommitSha`
 - `vscode-icons--previousCommitSha`
 - `vscode-icons--latestShortCommitSha`
@@ -90,6 +99,7 @@ the path is `ports/vscode-icons`, the dynamic outputs will be:
 - `ports/vscode-icons--updated`
 - `ports/vscode-icons--path`
 - `ports/vscode-icons--url`
+- `ports/vscode-icons--remoteName`
 - `ports/vscode-icons--previousShortCommitSha`
 - `ports/vscode-icons--previousCommitSha`
 - `ports/vscode-icons--latestShortCommitSha`
