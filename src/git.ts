@@ -27,3 +27,15 @@ export const getPreviousTag = async (
     return undefined;
   });
 };
+
+export const hasTag = async (
+  path: string,
+  commitSha: string
+): Promise<boolean> => {
+  core.info(`'${path}': Checking if tag exists at commit '${commitSha}'`);
+  const options = { cwd: path };
+  const tag = (
+    await getExecOutput("git tag --points-at HEAD", [], options)
+  ).stdout.trim();
+  return tag !== "";
+};

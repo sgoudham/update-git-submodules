@@ -80,6 +80,13 @@ test("extract single submodule from .gitmodules", async () => {
         stdout: `\n${expected[0].previousTag}`,
         stderr: "",
       })
+    )
+    .mockReturnValueOnce(
+      Promise.resolve({
+        exitCode: 0,
+        stdout: `\n${expected[0].previousTag}`,
+        stderr: "",
+      })
     );
 
   const actual = await parseGitmodules(input);
@@ -90,12 +97,20 @@ test("extract single submodule from .gitmodules that has no tags", async () => {
   const input = await readFile("src/__tests__/fixtures/single-gitmodules.ini");
   const expected = [mdBookSubmodule()];
   expected[0].previousTag = undefined;
+  expected[0].previousCommitShaHasTag = false;
 
   vi.mocked(getExecOutput)
     .mockReturnValueOnce(
       Promise.resolve({
         exitCode: 0,
         stdout: `\n${expected[0].previousCommitSha}`,
+        stderr: "",
+      })
+    )
+    .mockReturnValueOnce(
+      Promise.resolve({
+        exitCode: 0,
+        stdout: `\n\n`,
         stderr: "",
       })
     )
@@ -135,6 +150,27 @@ test("extract multiple git submodules from .gitmodules", async () => {
       Promise.resolve({
         exitCode: 0,
         stdout: `\n${vscodeIcons.previousCommitSha}`,
+        stderr: "",
+      })
+    )
+    .mockReturnValueOnce(
+      Promise.resolve({
+        exitCode: 0,
+        stdout: `\n${nvim.previousTag}`,
+        stderr: "",
+      })
+    )
+    .mockReturnValueOnce(
+      Promise.resolve({
+        exitCode: 0,
+        stdout: `\n${mdBook.previousTag}`,
+        stderr: "",
+      })
+    )
+    .mockReturnValueOnce(
+      Promise.resolve({
+        exitCode: 0,
+        stdout: `\n${vscodeIcons.previousTag}`,
         stderr: "",
       })
     )

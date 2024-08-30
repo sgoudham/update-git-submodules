@@ -524,8 +524,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.OidcClient = void 0;
-const http_client_1 = __nccwpck_require__(6634);
-const auth_1 = __nccwpck_require__(2177);
+const http_client_1 = __nccwpck_require__(2066);
+const auth_1 = __nccwpck_require__(7433);
 const core_1 = __nccwpck_require__(9093);
 class OidcClient {
     static createHttpClient(allowRetry = true, maxRetry = 10) {
@@ -1729,7 +1729,7 @@ class ExecState extends events.EventEmitter {
 
 /***/ }),
 
-/***/ 2177:
+/***/ 7433:
 /***/ (function(__unused_webpack_module, exports) {
 
 "use strict";
@@ -1817,7 +1817,7 @@ exports.PersonalAccessTokenCredentialHandler = PersonalAccessTokenCredentialHand
 
 /***/ }),
 
-/***/ 6634:
+/***/ 2066:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
@@ -1859,7 +1859,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.HttpClient = exports.isHttps = exports.HttpClientResponse = exports.HttpClientError = exports.getProxyUrl = exports.MediaTypes = exports.Headers = exports.HttpCodes = void 0;
 const http = __importStar(__nccwpck_require__(3685));
 const https = __importStar(__nccwpck_require__(5687));
-const pm = __importStar(__nccwpck_require__(4318));
+const pm = __importStar(__nccwpck_require__(7866));
 const tunnel = __importStar(__nccwpck_require__(4225));
 const undici_1 = __nccwpck_require__(7181);
 var HttpCodes;
@@ -2384,7 +2384,7 @@ class HttpClient {
         }
         const usingSsl = parsedUrl.protocol === 'https:';
         proxyAgent = new undici_1.ProxyAgent(Object.assign({ uri: proxyUrl.href, pipelining: !this._keepAlive ? 0 : 1 }, ((proxyUrl.username || proxyUrl.password) && {
-            token: `Basic ${Buffer.from(`${proxyUrl.username}:${proxyUrl.password}`).toString('base64')}`
+            token: `${proxyUrl.username}:${proxyUrl.password}`
         })));
         this._proxyAgentDispatcher = proxyAgent;
         if (usingSsl && this._ignoreSslError) {
@@ -2476,7 +2476,7 @@ const lowercaseKeys = (obj) => Object.keys(obj).reduce((c, k) => ((c[k.toLowerCa
 
 /***/ }),
 
-/***/ 4318:
+/***/ 7866:
 /***/ ((__unused_webpack_module, exports) => {
 
 "use strict";
@@ -30849,7 +30849,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.getPreviousTag = exports.getTag = exports.getCommit = void 0;
+exports.hasTag = exports.getPreviousTag = exports.getTag = exports.getCommit = void 0;
 const core = __importStar(__nccwpck_require__(9093));
 const exec_1 = __nccwpck_require__(7775);
 const getCommit = (path) => __awaiter(void 0, void 0, void 0, function* () {
@@ -30873,6 +30873,13 @@ const getPreviousTag = (path) => __awaiter(void 0, void 0, void 0, function* () 
     });
 });
 exports.getPreviousTag = getPreviousTag;
+const hasTag = (path, commitSha) => __awaiter(void 0, void 0, void 0, function* () {
+    core.info(`'${path}': Checking if tag exists at commit '${commitSha}'`);
+    const options = { cwd: path };
+    const tag = (yield (0, exec_1.getExecOutput)("git tag --points-at HEAD", [], options)).stdout.trim();
+    return tag !== "";
+});
+exports.hasTag = hasTag;
 
 
 /***/ }),
@@ -31020,6 +31027,7 @@ const parseGitmodules = (content) => __awaiter(void 0, void 0, void 0, function*
         const urlParts = url.replace(".git", "").split("/");
         const remoteName = `${urlParts[3]}/${urlParts[4]}`;
         const [previousCommitSha, previousShortCommitSha] = yield (0, git_1.getCommit)(path);
+        const previousCommitShaHasTag = yield (0, git_1.hasTag)(path, previousCommitSha);
         const previousTag = yield (0, git_1.getPreviousTag)(path);
         return {
             name,
@@ -31028,11 +31036,12 @@ const parseGitmodules = (content) => __awaiter(void 0, void 0, void 0, function*
             remoteName,
             previousShortCommitSha,
             previousCommitSha,
+            previousCommitShaHasTag,
+            previousTag,
             // The latest commit should be updated after the submodule is updated
             // If you think about it, the "previous" commit is the latest commit too
             latestShortCommitSha: previousShortCommitSha,
             latestCommitSha: previousCommitSha,
-            previousTag,
         };
     })));
 });
@@ -31184,7 +31193,12 @@ const tableRow = (submodule) => {
     let changeDisplay = `${submodule.previousShortCommitSha}...${submodule.latestShortCommitSha}`;
     let changeUrl = `[${changeDisplay}](${cleanUrl}/compare/${submodule.previousCommitSha}...${submodule.latestCommitSha})`;
     if (submodule.latestTag) {
-        changeDisplay = `${submodule.previousTag}...${submodule.latestTag}`;
+        if (submodule.previousCommitShaHasTag) {
+            changeDisplay = `${submodule.previousTag}...${submodule.latestTag}`;
+        }
+        else {
+            changeDisplay = `${submodule.previousShortCommitSha}...${submodule.latestTag}`;
+        }
         changeUrl = `[${changeDisplay}](${cleanUrl}/compare/${changeDisplay})`;
     }
     return `| ${name} | ${submodule.path} | ${changeUrl} |`;

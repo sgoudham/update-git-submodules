@@ -75,3 +75,27 @@ test("single pr body for single submodule using tag strategy", async () => {
 
   expect(actual).toContain(expected);
 });
+
+test("markdown pr body for multiple submodules using tag strategy and previous commit has no tag", async () => {
+  const [mdBook, nvim, vscodeIcons] = [
+    mdBookSubmodule(),
+    nvimSubmodule(),
+    vscodeIconsSubmodule(),
+  ];
+  mdBook.previousCommitShaHasTag = false;
+  nvim.previousCommitShaHasTag = false;
+  mdBook.latestTag = "v2.2.0";
+  nvim.latestTag = "v1.9.0";
+  vscodeIcons.latestTag = "v1.15.0";
+  const submodules = [mdBook, nvim, vscodeIcons];
+  const expected = `
+| --- | --- | --- |
+| [catppuccin/mdBook](https://github.com/catppuccin/mdBook.git) | ports/mdBook | [a19a19b...v2.2.0](https://github.com/catppuccin/mdBook/compare/a19a19b...v2.2.0) |
+| [catppuccin/nvim](https://github.com/catppuccin/nvim.git) | ports/nvim | [774a4ed...v1.9.0](https://github.com/catppuccin/nvim/compare/774a4ed...v1.9.0) |
+| [catppuccin/vscode-icons](https://github.com/catppuccin/vscode-icons.git) | ports/vscode-icons | [v1.14.0...v1.15.0](https://github.com/catppuccin/vscode-icons/compare/v1.14.0...v1.15.0) |
+`;
+
+  const actual = multiplePrBody(submodules);
+
+  expect(actual).toContain(expected);
+});

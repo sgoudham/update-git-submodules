@@ -14,7 +14,11 @@ const tableRow = (submodule: Submodule) => {
   let changeDisplay = `${submodule.previousShortCommitSha}...${submodule.latestShortCommitSha}`;
   let changeUrl = `[${changeDisplay}](${cleanUrl}/compare/${submodule.previousCommitSha}...${submodule.latestCommitSha})`;
   if (submodule.latestTag) {
-    changeDisplay = `${submodule.previousTag}...${submodule.latestTag}`;
+    if (submodule.previousCommitShaHasTag) {
+      changeDisplay = `${submodule.previousTag}...${submodule.latestTag}`;
+    } else {
+      changeDisplay = `${submodule.previousShortCommitSha}...${submodule.latestTag}`;
+    }
     changeUrl = `[${changeDisplay}](${cleanUrl}/compare/${changeDisplay})`;
   }
   return `| ${name} | ${submodule.path} | ${changeUrl} |`;
