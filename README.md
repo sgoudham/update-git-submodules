@@ -1,6 +1,7 @@
 <h1 align="center">
-    update-git-submodules (
-    <a href="https://github.com/sgoudham/update-git-submodules/actions/workflows/build.yml"><img src="https://github.com/sgoudham/update-git-submodules/actions/workflows/build.yml/badge.svg"></a> )
+    update-git-submodules 
+    <br>
+    ( <a href="https://github.com/sgoudham/update-git-submodules/actions/workflows/build.yml"><img src="https://github.com/sgoudham/update-git-submodules/actions/workflows/build.yml/badge.svg"></a> )
 </h1>
 
 This GitHub Action updates one or more git submodules in a repository to the
