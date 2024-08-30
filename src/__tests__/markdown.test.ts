@@ -90,8 +90,8 @@ test("markdown pr body for multiple submodules using tag strategy and previous c
   const submodules = [mdBook, nvim, vscodeIcons];
   const expected = `
 | --- | --- | --- |
-| [catppuccin/mdBook](https://github.com/catppuccin/mdBook.git) | ports/mdBook | [a19a19b...v2.2.0](https://github.com/catppuccin/mdBook/compare/a19a19b...v2.2.0) |
-| [catppuccin/nvim](https://github.com/catppuccin/nvim.git) | ports/nvim | [774a4ed...v1.9.0](https://github.com/catppuccin/nvim/compare/774a4ed...v1.9.0) |
+| [catppuccin/mdBook](https://github.com/catppuccin/mdBook.git) | ports/mdBook | [a19a19b...v2.2.0](https://github.com/catppuccin/mdBook/compare/a19a19bd14f26c3bba311bbffc5a74710add5ac2...v2.2.0) |
+| [catppuccin/nvim](https://github.com/catppuccin/nvim.git) | ports/nvim | [774a4ed...v1.9.0](https://github.com/catppuccin/nvim/compare/774a4ed9a69d0a2633da60f73aa63a8e23aacced...v1.9.0) |
 | [catppuccin/vscode-icons](https://github.com/catppuccin/vscode-icons.git) | ports/vscode-icons | [v1.14.0...v1.15.0](https://github.com/catppuccin/vscode-icons/compare/v1.14.0...v1.15.0) |
 `;
 
