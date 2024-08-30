@@ -9,56 +9,12 @@ class SubmoduleBuilder {
     }
   }
 
-  setName(name: string): SubmoduleBuilder {
-    this.submodule.name = name;
-    return this;
-  }
-
-  setPath(path: string): SubmoduleBuilder {
-    this.submodule.path = path;
-    return this;
-  }
-
-  setUrl(url: string): SubmoduleBuilder {
-    this.submodule.url = url;
-    return this;
-  }
-
-  setPreviousShortCommitSha(sha: string): SubmoduleBuilder {
-    this.submodule.previousShortCommitSha = sha;
-    return this;
-  }
-
-  setPreviousCommitSha(sha: string): SubmoduleBuilder {
-    this.submodule.previousCommitSha = sha;
-    return this;
-  }
-
-  setPreviousTag(tag: string): SubmoduleBuilder {
-    this.submodule.previousTag = tag;
-    return this;
-  }
-
-  setLatestShortCommitSha(sha: string): SubmoduleBuilder {
-    this.submodule.latestShortCommitSha = sha;
-    return this;
-  }
-
-  setLatestCommitSha(sha: string): SubmoduleBuilder {
-    this.submodule.latestCommitSha = sha;
-    return this;
-  }
-
-  setLatestTag(tag: string): SubmoduleBuilder {
-    this.submodule.latestTag = tag;
-    return this;
-  }
-
   build(): Submodule {
     if (
       !this.submodule.name ||
       !this.submodule.path ||
       !this.submodule.url ||
+      !this.submodule.remoteName ||
       !this.submodule.previousShortCommitSha ||
       !this.submodule.previousCommitSha ||
       !this.submodule.latestShortCommitSha ||
@@ -74,6 +30,7 @@ export const mdBookSubmodule = (
   name: string = "ports/mdBook",
   path: string = "ports/mdBook",
   url: string = "https://github.com/catppuccin/mdBook.git",
+  remoteName: string = "catppuccin/mdBook",
   previousShortCommitSha: string = "a19a19b",
   previousCommitSha: string = "a19a19bd14f26c3bba311bbffc5a74710add5ac2",
   previousTag: string = "v0.1.2",
@@ -84,6 +41,7 @@ export const mdBookSubmodule = (
     name,
     path,
     url,
+    remoteName,
     previousShortCommitSha,
     previousCommitSha,
     previousTag,
@@ -96,6 +54,7 @@ export const vscodeIconsSubmodule = (
   name: string = "ports/vscode-icons",
   path: string = "ports/vscode-icons",
   url: string = "https://github.com/catppuccin/vscode-icons.git",
+  remoteName: string = "catppuccin/vscode-icons",
   previousShortCommitSha: string = "71d98b8",
   previousCommitSha: string = "71d98b81bfdb6b8d3527037c3017eb07e6ec0621",
   previousTag: string = "v1.14.0",
@@ -106,6 +65,7 @@ export const vscodeIconsSubmodule = (
     name,
     path,
     url,
+    remoteName,
     previousShortCommitSha,
     previousCommitSha,
     previousTag,
@@ -118,6 +78,7 @@ export const nvimSubmodule = (
   name: string = "ports/nvim",
   path: string = "ports/nvim",
   url: string = "https://github.com/catppuccin/nvim.git",
+  remoteName: string = "catppuccin/nvim",
   previousShortCommitSha: string = "774a4ed",
   previousCommitSha: string = "774a4ed9a69d0a2633da60f73aa63a8e23aacced",
   previousTag: string = "v1.8.0",
@@ -128,6 +89,7 @@ export const nvimSubmodule = (
     name,
     path,
     url,
+    remoteName,
     previousShortCommitSha,
     previousCommitSha,
     previousTag,
