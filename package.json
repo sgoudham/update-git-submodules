@@ -23,7 +23,7 @@
   "engines": {
     "node": ">=20"
   },
-  "packageManager": "pnpm@9.10.0",
+  "packageManager": "pnpm@9.11.0",
   "scripts": {
     "build": "pnpm exec ncc build src/index.ts -o dist --source-map --license licenses.txt",
     "build:watch": "pnpm build -- --watch",
