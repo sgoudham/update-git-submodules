@@ -1,5 +1,15 @@
 # Changelog
 
+## [2.1.2](https://github.com/sgoudham/update-git-submodules/compare/v2.1.1...v2.1.2) (2025-02-23)
+
+
+### Bug Fixes
+
+* **deps:** update dependency @actions/core to v1.11.1 ([#47](https://github.com/sgoudham/update-git-submodules/issues/47)) ([79def9b](https://github.com/sgoudham/update-git-submodules/commit/79def9bd142bf115000515d289d30287157ec69a))
+* **deps:** update dependency @actions/core to v1.11.1 ([#48](https://github.com/sgoudham/update-git-submodules/issues/48)) ([463aade](https://github.com/sgoudham/update-git-submodules/commit/463aade2e6a94ec695833c99117c0ab807aaf64a))
+* **deps:** update dependency ini to v5 ([#29](https://github.com/sgoudham/update-git-submodules/issues/29)) ([001f76f](https://github.com/sgoudham/update-git-submodules/commit/001f76f911db6ff69af2a510462175781332594a))
+* **deps:** update dependency zod to v3.24.2 ([#56](https://github.com/sgoudham/update-git-submodules/issues/56)) ([4b4587e](https://github.com/sgoudham/update-git-submodules/commit/4b4587e8bd7829e616579aab277f1c695c3bb70b))
+
 ## [2.1.1](https://github.com/sgoudham/update-git-submodules/compare/v2.1.0...v2.1.1) (2024-08-30)
 
 
