@@ -11,7 +11,12 @@ import {
   updateToLatestTag,
 } from "../main";
 import { getExecOutput } from "@actions/exec";
-import { mdBookSubmodule, nvimSubmodule, vscodeIconsSubmodule } from "./utils";
+import {
+  mdBookSubmodule,
+  mdBookSubmoduleSSH,
+  nvimSubmodule,
+  vscodeIconsSubmodule
+} from "./utils";
 import { getInput, setOutput } from "@actions/core";
 
 vi.mock("@actions/core", async () => {
@@ -65,6 +70,37 @@ test("parse GitHub Action inputs with no input submodules", async () => {
 test("extract single submodule from .gitmodules", async () => {
   const input = await readFile("src/__tests__/fixtures/single-gitmodules.ini");
   const expected = [mdBookSubmodule()];
+
+  vi.mocked(getExecOutput)
+    .mockReturnValueOnce(
+      Promise.resolve({
+        exitCode: 0,
+        stdout: `\n${expected[0].previousCommitSha}`,
+        stderr: "",
+      })
+    )
+    .mockReturnValueOnce(
+      Promise.resolve({
+        exitCode: 0,
+        stdout: `\n${expected[0].previousTag}`,
+        stderr: "",
+      })
+    )
+    .mockReturnValueOnce(
+      Promise.resolve({
+        exitCode: 0,
+        stdout: `\n${expected[0].previousTag}`,
+        stderr: "",
+      })
+    );
+
+  const actual = await parseGitmodules(input);
+  expect(actual).toEqual(expected);
+});
+
+test("ensure ssh-style git urls can be parsed", async () => {
+  const input = await readFile("src/__tests__/fixtures/ssh-gitmodules.ini");
+  const expected = [mdBookSubmoduleSSH()];
 
   vi.mocked(getExecOutput)
     .mockReturnValueOnce(

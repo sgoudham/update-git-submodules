@@ -14,8 +14,8 @@ const gitmodulesSchema = z.record(
   z.string(),
   z.object({
     path: z.string(),
-    url: z.string().url(),
-  })
+    url: z.string().regex(/[A-Za-z][A-Za-z0-9+.-]*/),
+  }),
 );
 
 export type Inputs = {
