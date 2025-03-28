@@ -84,6 +84,34 @@ export const readFile = async (path: string): Promise<string> => {
   });
 };
 
+export const getRemoteName = (url: string) => {
+  url = url.replace(/\.git\/?/, "")
+
+  let startIndex = url.length - 1;
+
+  // Scan backwards to find separator.
+  while (startIndex >= 0) {
+    if (url[startIndex] == "~" || url[startIndex] == ":") {
+      startIndex++;
+      break;
+    } else if (url[startIndex] == ".") {
+      break;
+    }
+
+    startIndex--;
+  }
+
+  // If we broke on a dot, we _probably_ hit a domain label, so
+  // scan forward until we hit a slash.
+  if (url[startIndex] == ".") {
+    while (url[startIndex] != "/") {
+      startIndex++;
+    }
+  }
+
+  return url.substring(startIndex).replace(/^\/+/, "");
+}
+
 export const parseGitmodules = async (
   content: string
 ): Promise<Submodule[]> => {
@@ -94,8 +122,7 @@ export const parseGitmodules = async (
       const name = key.split('"')[1].trim();
       const path = values.path.replace(/"/g, "").trim();
       const url = values.url.replace(/"/g, "").trim();
-      const urlParts = url.replace(".git", "").split("/");
-      const remoteName = `${urlParts[3]}/${urlParts[4]}`;
+      const remoteName = getRemoteName(url);
       const [previousCommitSha, previousShortCommitSha] = await getCommit(path);
       const previousCommitShaHasTag = await hasTag(path, previousCommitSha);
       const previousTag = await getPreviousTag(path);
