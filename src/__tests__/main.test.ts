@@ -14,7 +14,6 @@ import {
 import { getExecOutput } from "@actions/exec";
 import {
   mdBookSubmodule,
-  mdBookSubmoduleSSH,
   nvimSubmodule,
   vscodeIconsSubmodule
 } from "./utils";
@@ -130,9 +129,11 @@ test("extract single submodule from .gitmodules", async () => {
   expect(actual).toEqual(expected);
 });
 
-test("ensure ssh-style git urls can be parsed", async () => {
+test("extract single submodule from .gitmodules with ssh-style url", async () => {
   const input = await readFile("src/__tests__/fixtures/ssh-gitmodules.ini");
-  const expected = [mdBookSubmoduleSSH()];
+  const submodule = mdBookSubmodule()
+  submodule.url = "git@github.com:catppuccin/mdBook.git"
+  const expected = [submodule];
 
   vi.mocked(getExecOutput)
     .mockReturnValueOnce(

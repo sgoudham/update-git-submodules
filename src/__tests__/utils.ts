@@ -53,15 +53,6 @@ export const mdBookSubmodule = (
   }).build();
 };
 
-export const mdBookSubmoduleSSH = (
-  url: string = "git@github.com:catppuccin/mdBook.git"
-) => {
-  let mod = mdBookSubmodule();
-  mod.url = url;
-
-  return mod
-}
-
 export const vscodeIconsSubmodule = (
   name: string = "ports/vscode-icons",
   path: string = "ports/vscode-icons",
