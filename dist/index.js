@@ -30969,7 +30969,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.setDynamicOutputs = exports.updateToLatestTag = exports.updateToLatestCommit = exports.filterSubmodules = exports.parseGitmodules = exports.readFile = exports.parseInputs = void 0;
+exports.setDynamicOutputs = exports.updateToLatestTag = exports.updateToLatestCommit = exports.filterSubmodules = exports.parseGitmodules = exports.getRemoteName = exports.readFile = exports.parseInputs = void 0;
 exports.run = run;
 const exec_1 = __nccwpck_require__(7775);
 const core = __importStar(__nccwpck_require__(9093));
@@ -30982,7 +30982,7 @@ const ini_1 = __nccwpck_require__(6202);
 const updateStrategy = zod_1.z.enum(["commit", "tag"]);
 const gitmodulesSchema = zod_1.z.record(zod_1.z.string(), zod_1.z.object({
     path: zod_1.z.string(),
-    url: zod_1.z.string().url(),
+    url: zod_1.z.string().regex(/[A-Za-z][A-Za-z0-9+.-]*/),
 }));
 const parseInputs = () => __awaiter(void 0, void 0, void 0, function* () {
     const gitmodulesPath = core.getInput("gitmodulesPath").trim();
@@ -31017,6 +31017,30 @@ const readFile = (path) => __awaiter(void 0, void 0, void 0, function* () {
     });
 });
 exports.readFile = readFile;
+const getRemoteName = (url) => {
+    url = url.replace(/\.git\/?/, "");
+    let startIndex = url.length - 1;
+    // Scan backwards to find separator.
+    while (startIndex >= 0) {
+        if (url[startIndex] == "~" || url[startIndex] == ":") {
+            startIndex++;
+            break;
+        }
+        else if (url[startIndex] == ".") {
+            break;
+        }
+        startIndex--;
+    }
+    // If we broke on a dot, we _probably_ hit a domain label, so
+    // scan forward until we hit a slash.
+    if (url[startIndex] == ".") {
+        while (url[startIndex] != "/") {
+            startIndex++;
+        }
+    }
+    return url.substring(startIndex).replace(/^\/+/, "");
+};
+exports.getRemoteName = getRemoteName;
 const parseGitmodules = (content) => __awaiter(void 0, void 0, void 0, function* () {
     const parsed = (0, ini_1.parse)(content);
     const gitmodules = yield gitmodulesSchema.parseAsync(parsed);
@@ -31024,8 +31048,7 @@ const parseGitmodules = (content) => __awaiter(void 0, void 0, void 0, function*
         const name = key.split('"')[1].trim();
         const path = values.path.replace(/"/g, "").trim();
         const url = values.url.replace(/"/g, "").trim();
-        const urlParts = url.replace(".git", "").split("/");
-        const remoteName = `${urlParts[3]}/${urlParts[4]}`;
+        const remoteName = (0, exports.getRemoteName)(url);
         const [previousCommitSha, previousShortCommitSha] = yield (0, git_1.getCommit)(path);
         const previousCommitShaHasTag = yield (0, git_1.hasTag)(path, previousCommitSha);
         const previousTag = yield (0, git_1.getPreviousTag)(path);

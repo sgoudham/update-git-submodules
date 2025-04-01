@@ -9,9 +9,14 @@ import {
   Submodule,
   updateToLatestCommit,
   updateToLatestTag,
+  getRemoteName,
 } from "../main";
 import { getExecOutput } from "@actions/exec";
-import { mdBookSubmodule, nvimSubmodule, vscodeIconsSubmodule } from "./utils";
+import {
+  mdBookSubmodule,
+  nvimSubmodule,
+  vscodeIconsSubmodule
+} from "./utils";
 import { getInput, setOutput } from "@actions/core";
 
 vi.mock("@actions/core", async () => {
@@ -62,9 +67,73 @@ test("parse GitHub Action inputs with no input submodules", async () => {
   expect(actual).toEqual(expected);
 });
 
+test.each([
+  ["ssh://user@host.xz:port/path/to/repo.git/", "port/path/to/repo"],
+  ["ssh://user@host.xz/path/to/repo.git/", "path/to/repo"],
+  ["ssh://host.xz:port/path/to/repo.git/", "port/path/to/repo"],
+  ["ssh://host.xz/path/to/repo.git/", "path/to/repo"],
+  ["ssh://user@host.xz/path/to/repo.git/", "path/to/repo"],
+  ["ssh://host.xz/path/to/repo.git/", "path/to/repo"],
+  ["ssh://user@host.xz/~user/path/to/repo.git/", "user/path/to/repo"],
+  ["ssh://host.xz/~user/path/to/repo.git/", "user/path/to/repo"],
+  ["ssh://user@host.xz/~/path/to/repo.git", "path/to/repo"],
+  ["ssh://host.xz/~/path/to/repo.git", "path/to/repo"],
+  ["user@host.xz:/path/to/repo.git/", "path/to/repo"],
+  ["host.xz:/path/to/repo.git/", "path/to/repo"],
+  ["user@host.xz:~user/path/to/repo.git/", "user/path/to/repo"],
+  ["host.xz:~user/path/to/repo.git/", "user/path/to/repo"],
+  ["user@host.xz:path/to/repo.git", "path/to/repo"],
+  ["host.xz:path/to/repo.git", "path/to/repo"],
+  ["rsync://host.xz/path/to/repo.git/", "path/to/repo"],
+  ["git://host.xz/path/to/repo.git/", "path/to/repo"],
+  ["git://host.xz/~user/path/to/repo.git/", "user/path/to/repo"],
+  ["http://host.xz/path/to/repo.git/", "path/to/repo"],
+  ["https://host.xz/path/to/repo.git/", "path/to/repo"],
+  ["/path/to/repo.git/", "path/to/repo"],
+  ["path/to/repo.git/", "path/to/repo"],
+  ["~/path/to/repo.git", "path/to/repo"],
+  ["file:///path/to/repo.git/", "path/to/repo"],
+  ["file://~/path/to/repo.git/", "path/to/repo"],
+])('getRemoteName(%s) -> %s', (url, expected) => {
+  expect(getRemoteName(url)).toBe(expected)
+})
+
 test("extract single submodule from .gitmodules", async () => {
   const input = await readFile("src/__tests__/fixtures/single-gitmodules.ini");
   const expected = [mdBookSubmodule()];
+
+  vi.mocked(getExecOutput)
+    .mockReturnValueOnce(
+      Promise.resolve({
+        exitCode: 0,
+        stdout: `\n${expected[0].previousCommitSha}`,
+        stderr: "",
+      })
+    )
+    .mockReturnValueOnce(
+      Promise.resolve({
+        exitCode: 0,
+        stdout: `\n${expected[0].previousTag}`,
+        stderr: "",
+      })
+    )
+    .mockReturnValueOnce(
+      Promise.resolve({
+        exitCode: 0,
+        stdout: `\n${expected[0].previousTag}`,
+        stderr: "",
+      })
+    );
+
+  const actual = await parseGitmodules(input);
+  expect(actual).toEqual(expected);
+});
+
+test("extract single submodule from .gitmodules with ssh-style url", async () => {
+  const input = await readFile("src/__tests__/fixtures/ssh-gitmodules.ini");
+  const submodule = mdBookSubmodule()
+  submodule.url = "git@github.com:catppuccin/mdBook.git"
+  const expected = [submodule];
 
   vi.mocked(getExecOutput)
     .mockReturnValueOnce(
