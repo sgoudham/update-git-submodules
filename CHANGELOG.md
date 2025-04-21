@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.1.3](https://github.com/sgoudham/update-git-submodules/compare/v2.1.2...v2.1.3) (2025-04-21)
+
+
+### Bug Fixes
+
+* **deps:** update dependency zod to v3.24.3 ([#81](https://github.com/sgoudham/update-git-submodules/issues/81)) ([0d5f4b3](https://github.com/sgoudham/update-git-submodules/commit/0d5f4b3f00eec7931a85020c8761a5c06f59461f))
+
 ## [2.1.2](https://github.com/sgoudham/update-git-submodules/compare/v2.1.1...v2.1.2) (2025-04-02)
 
 
