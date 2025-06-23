@@ -112,11 +112,26 @@ export const getRemoteName = (url: string) => {
   return url.substring(startIndex).replace(/^\/+/, "");
 }
 
+type IniSubmodule = Record<"path" | "url", string>;
+
+function cleanUpParsed(
+  parsed: Record<string, IniSubmodule | Record<string, IniSubmodule>>,
+) {
+  return Object.entries(parsed)
+    .map(([key, value]) => {
+      if (value.path && value.url) return { [key]: value };
+      const [[nestedKey, nestedValue]] = Object.entries(value);
+      return { [`${key} .${nestedKey}`]: nestedValue };
+    })
+    .reduce((prev, curr) => ({ ...prev, ...curr }), {});
+}
+
+
 export const parseGitmodules = async (
   content: string
 ): Promise<Submodule[]> => {
   const parsed = parse(content);
-  const gitmodules = await gitmodulesSchema.parseAsync(parsed);
+  const gitmodules = await gitmodulesSchema.parseAsync(cleanUpParsed(parsed));
   return await Promise.all(
     Object.entries(gitmodules).map(async ([key, values]) => {
       const name = key.split('"')[1].trim();

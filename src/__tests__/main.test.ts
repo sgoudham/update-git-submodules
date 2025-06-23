@@ -193,21 +193,14 @@ test("extract multiple git submodules from .gitmodules", async () => {
   const input = await readFile(
     "src/__tests__/fixtures/multiple-gitmodules.ini"
   );
-  const [nvim, mdBook, vscodeIcons] = [
-    nvimSubmodule(),
+  const [mdBook, vscodeIcons, nvim] = [
     mdBookSubmodule(),
     vscodeIconsSubmodule(),
+    nvimSubmodule(),
   ];
-  const expected: Submodule[] = [nvim, mdBook, vscodeIcons];
+  const expected: Submodule[] = [mdBook, vscodeIcons, nvim];
 
   vi.mocked(getExecOutput)
-    .mockReturnValueOnce(
-      Promise.resolve({
-        exitCode: 0,
-        stdout: `\n${nvim.previousCommitSha}`,
-        stderr: "",
-      })
-    )
     .mockReturnValueOnce(
       Promise.resolve({
         exitCode: 0,
@@ -225,7 +218,7 @@ test("extract multiple git submodules from .gitmodules", async () => {
     .mockReturnValueOnce(
       Promise.resolve({
         exitCode: 0,
-        stdout: `\n${nvim.previousTag}`,
+        stdout: `\n${nvim.previousCommitSha}`,
         stderr: "",
       })
     )
@@ -263,6 +256,13 @@ test("extract multiple git submodules from .gitmodules", async () => {
         stdout: `\n${vscodeIcons.previousTag}`,
         stderr: "",
       })
+    )
+    .mockReturnValueOnce(
+      Promise.resolve({
+        exitCode: 0,
+        stdout: `\n${nvim.previousTag}`,
+        stderr: "",
+      }),
     );
 
   const actual = await parseGitmodules(input);
