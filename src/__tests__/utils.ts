@@ -80,8 +80,8 @@ export const vscodeIconsSubmodule = (
 };
 
 export const nvimSubmodule = (
-  name: string = "ports/nvim",
-  path: string = "ports/nvim",
+  name: string = ".config/nvim",
+  path: string = ".config/nvim",
   url: string = "https://github.com/catppuccin/nvim.git",
   remoteName: string = "catppuccin/nvim",
   previousShortCommitSha: string = "774a4ed",

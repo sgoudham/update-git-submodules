@@ -10,13 +10,26 @@ import { parse } from "ini";
 const updateStrategy = z.enum(["commit", "tag"]);
 type UpdateStrategy = z.infer<typeof updateStrategy>;
 
+const submodule = z.object({
+  path: z.string(),
+  url: z.string().regex(/[A-Za-z][A-Za-z0-9+.-]*/),
+});
+
 const gitmodulesSchema = z.record(
   z.string(),
-  z.object({
-    path: z.string(),
-    url: z.string().regex(/[A-Za-z][A-Za-z0-9+.-]*/),
-  }),
-);
+  z.union([
+    submodule,
+    z.record(z.string(), submodule)
+  ])
+).transform(submodules => {
+  return Object.entries(submodules)
+    .map(([key, value]) => {
+      if (value.path && value.url) return { [key]: value };
+      const [[nestedKey, nestedValue]] = Object.entries(value);
+      return { [`${key} .${nestedKey}`]: nestedValue };
+    })
+    .reduce((prev, curr) => ({ ...prev, ...curr }), {});
+});
 
 export type Inputs = {
   gitmodulesPath: string;
