@@ -10,13 +10,26 @@ import { parse } from "ini";
 const updateStrategy = z.enum(["commit", "tag"]);
 type UpdateStrategy = z.infer<typeof updateStrategy>;
 
+const submodule = z.object({
+  path: z.string(),
+  url: z.string().regex(/[A-Za-z][A-Za-z0-9+.-]*/),
+});
+
 const gitmodulesSchema = z.record(
   z.string(),
-  z.object({
-    path: z.string(),
-    url: z.string().regex(/[A-Za-z][A-Za-z0-9+.-]*/),
-  }),
-);
+  z.union([
+    submodule,
+    z.record(z.string(), submodule)
+  ])
+).transform(submodules => {
+  return Object.entries(submodules)
+    .map(([key, value]) => {
+      if (value.path && value.url) return { [key]: value };
+      const [[nestedKey, nestedValue]] = Object.entries(value);
+      return { [`${key} .${nestedKey}`]: nestedValue };
+    })
+    .reduce((prev, curr) => ({ ...prev, ...curr }), {});
+});
 
 export type Inputs = {
   gitmodulesPath: string;
@@ -112,26 +125,11 @@ export const getRemoteName = (url: string) => {
   return url.substring(startIndex).replace(/^\/+/, "");
 }
 
-type IniSubmodule = Record<"path" | "url", string>;
-
-function cleanUpParsed(
-  parsed: Record<string, IniSubmodule | Record<string, IniSubmodule>>,
-) {
-  return Object.entries(parsed)
-    .map(([key, value]) => {
-      if (value.path && value.url) return { [key]: value };
-      const [[nestedKey, nestedValue]] = Object.entries(value);
-      return { [`${key} .${nestedKey}`]: nestedValue };
-    })
-    .reduce((prev, curr) => ({ ...prev, ...curr }), {});
-}
-
-
 export const parseGitmodules = async (
   content: string
 ): Promise<Submodule[]> => {
   const parsed = parse(content);
-  const gitmodules = await gitmodulesSchema.parseAsync(cleanUpParsed(parsed));
+  const gitmodules = await gitmodulesSchema.parseAsync(parsed);
   return await Promise.all(
     Object.entries(gitmodules).map(async ([key, values]) => {
       const name = key.split('"')[1].trim();
